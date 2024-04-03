@@ -1,6 +1,7 @@
 import streamlit as st
 import utils.ui_config as uiconf
 from streamlit_extras.stylable_container import stylable_container as container 
+from streamlit_extras.switch_page_button import switch_page as nav_to_page
 
 ############################## Page Configuration ##############################
 
@@ -52,7 +53,10 @@ with col1:
         st.markdown(title_txt, unsafe_allow_html=True)
         st.markdown(subheader_txt, unsafe_allow_html=True)
         st.markdown(body_txt, unsafe_allow_html=True)
-        st.button("Get Started")
+        get_started_button = st.button("Get Started")
+
+        if get_started_button:
+            nav_to_page("Aneurysm Detection")
 
 with col2:
     with container(
