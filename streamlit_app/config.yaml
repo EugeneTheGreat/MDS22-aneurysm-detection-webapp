@@ -1,0 +1,21 @@
+credentials:
+  usernames:
+    admin1:
+      email: admin1@gmail.com
+      failed_login_attempts: 0 # Will be managed automatically
+      logged_in: False # Will be managed automatically
+      name: Admin 1
+      password: Admin123 # Will be hashed automatically
+    user1:
+      email: user1@gmail.com
+      failed_login_attempts: 0 # Will be managed automatically
+      logged_in: False # Will be managed automatically
+      name: User 1
+      password: User123 # Will be hashed automatically
+cookie:
+  expiry_days: 30
+  key: brain_aneurysm # Must be string
+  name: brain_aneurysm_cookie
+pre-authorized:
+  emails:
+  - test001@gmail.com
