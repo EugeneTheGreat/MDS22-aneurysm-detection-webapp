@@ -1,2 +1,5 @@
 # macOS Files
 **/.DS_Store
+
+# generated files
+__pycache__
