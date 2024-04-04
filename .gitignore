@@ -3,3 +3,6 @@
 
 # generated files
 __pycache__
+
+# streamlit files
+.streamlit
