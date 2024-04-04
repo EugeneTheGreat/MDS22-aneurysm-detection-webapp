@@ -1,10 +1,10 @@
 import os
 import sys
-sys.path.append('/home/to5743/aneurysm_project/Aneurysm_Detection/')  # this line is needed on the HPC cluster to recognize the dir as a python package
+sys.path.append('/home/student/Documents/MDS22/Aneurysm_Detection/')  # this line is needed on the HPC cluster to recognize the dir as a python package
 import numpy as np
 import pandas as pd
 from statsmodels.stats.proportion import proportion_confint
-from show_results.utils_show_results import get_result_filename, detection_one_sub_for_conf_int, extract_unique_elements
+from utils_show_results import get_result_filename, detection_one_sub_for_conf_int, extract_unique_elements
 from inference.utils_inference import load_config_file
 
 

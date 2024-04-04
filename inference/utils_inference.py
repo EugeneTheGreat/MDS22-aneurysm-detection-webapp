@@ -62,7 +62,8 @@ def create_input_lists(bids_dir: str) -> Tuple[list, list]:
     return all_subdirs, all_files
 
 
-def extract_registration_quality_metrics(bids_ds_path: str,
+def extract_registration_quality_metrics(training_sub_ses_dir: str,
+                                         bids_ds_path: str,
                                          sub_ses_test: list) -> Tuple[float, float]:
     """This function checks the registration quality metrics for all patients and saves some thresholds. If during the patient-wise one subject has registration quality
      values which are outliers, the sliding-window approach for that subject will not be anatomically-informed. Instead, the whole brain will be scanned.
@@ -74,24 +75,25 @@ def extract_registration_quality_metrics(bids_ds_path: str,
         p3_neigh_corr_struct_2_tof: the 3th percentile of the Neighborhood Correlation quality metric distribution (of the struct_2_tof registration)
         p97_mut_inf_struct_2_tof: the 97th percentile of the Mattes Mutual Information quality metric distribution (of the struct_2_tof registration)
      """
-    reg_metrics_dir = os.path.join(bids_ds_path, "derivatives", "registrations", "reg_metrics")
+    # reg_metrics_dir = os.path.join(bids_ds_path, "derivatives", "registrations", "reg_metrics")
+    reg_metrics_dir = os.path.join(training_sub_ses_dir, "derivatives", "registrations", "reg_metrics")
     all_struct_2_tof_neigh_corr = []
     all_struct_2_tof_mutual_inf = []
     for sub in os.listdir(os.path.join(reg_metrics_dir)):
         if "sub" in sub and os.path.isdir(os.path.join(reg_metrics_dir, sub)):
             for ses in os.listdir(os.path.join(reg_metrics_dir, sub)):
                 if "ses" in ses and os.path.isdir(os.path.join(reg_metrics_dir, sub, ses)):
-                    sub_ses = f"{sub}_{ses}"
-                    if sub_ses not in sub_ses_test:  # only use training ones otherwise we might introduce a bias towards the registration quality metrics of the test set
-                        for files in os.listdir(os.path.join(reg_metrics_dir, sub, ses)):
-                            if "mni2struct" in files:
-                                pass
-                            elif "struct2tof" in files:
-                                struct_2_tof_metrics = pd.read_csv(os.path.join(reg_metrics_dir, sub, ses, files))
-                                all_struct_2_tof_neigh_corr.append(struct_2_tof_metrics.iloc[0]['neigh_corr'])
-                                all_struct_2_tof_mutual_inf.append(struct_2_tof_metrics.iloc[0]['mut_inf'])
-                            else:
-                                raise ValueError("Unknown filename")
+                    # sub_ses = f"{sub}_{ses}"
+                    # if sub_ses not in sub_ses_test:  # only use training ones otherwise we might introduce a bias towards the registration quality metrics of the test set
+                    for files in os.listdir(os.path.join(reg_metrics_dir, sub, ses)):
+                        if "mni2struct" in files:
+                            pass
+                        elif "struct2tof" in files:
+                            struct_2_tof_metrics = pd.read_csv(os.path.join(reg_metrics_dir, sub, ses, files))
+                            all_struct_2_tof_neigh_corr.append(struct_2_tof_metrics.iloc[0]['neigh_corr'])
+                            all_struct_2_tof_mutual_inf.append(struct_2_tof_metrics.iloc[0]['mut_inf'])
+                        else:
+                            raise ValueError("Unknown filename")
 
     p3_neigh_corr_struct_2_tof = np.percentile(all_struct_2_tof_neigh_corr, [3])[0]
     p97_mut_inf_struct_2_tof = np.percentile(all_struct_2_tof_mutual_inf, [97])[0]
@@ -1010,7 +1012,8 @@ def check_registration_quality(quality_metrics_thresholds: dict,
     """
     registration_accurate_enough = False
 
-    if struct_2_tof_mi > quality_metrics_thresholds["struct_2_tof_mi"]:
+    # if struct_2_tof_mi > quality_metrics_thresholds["struct_2_tof_mi"]:
+    if struct_2_tof_mi > quality_metrics_thresholds[1]:
         registration_accurate_enough = True
 
     return registration_accurate_enough
@@ -1432,6 +1435,7 @@ def convert_mni_to_angio(df_landmarks: pd.DataFrame,
 def extract_distance_one_aneurysm(subdir: str,
                                   aneur_path: str,
                                   bids_path: str,
+                                  training_sub_ses_dir: str,
                                   overlapping: float,
                                   patch_side: int,
                                   landmarks_physical_space_path: str,
@@ -1465,9 +1469,11 @@ def extract_distance_one_aneurysm(subdir: str,
     # if we are NOT dealing with a treated aneurysm
     if "Treated" not in lesion_name:
 
-        registration_params_dir = os.path.join(bids_path, "derivatives", "registrations", "reg_params")
+        # registration_params_dir = os.path.join(bids_path, "derivatives", "registrations", "reg_params")
+        registration_params_dir = os.path.join(training_sub_ses_dir, "derivatives", "registrations", "reg_params")
         assert os.path.exists(registration_params_dir), f"Path {registration_params_dir} does not exist"
-        bfc_derivatives_dir = os.path.join(bids_path, "derivatives", "N4_bias_field_corrected")
+        # bfc_derivatives_dir = os.path.join(bids_path, "derivatives", "N4_bias_field_corrected")
+        bfc_derivatives_dir = os.path.join(training_sub_ses_dir, "derivatives", "N4_bias_field_corrected")
         assert os.path.exists(bfc_derivatives_dir), f"Path {bfc_derivatives_dir} does not exist"  # make sure that path exists
 
         if "ADAM" in bfc_derivatives_dir:
@@ -1555,7 +1561,8 @@ def extract_distance_one_aneurysm(subdir: str,
         return None  # in any case the Nones will be removed later
 
 
-def extract_distance_thresholds(bids_ds_path: str,
+def extract_distance_thresholds(training_sub_ses_dir: str,
+                                bids_ds_path: str,
                                 reg_quality_metrics_threshold: dict,
                                 sub_ses_test: list,
                                 n_parallel_jobs: int,
@@ -1582,9 +1589,11 @@ def extract_distance_thresholds(bids_ds_path: str,
     all_files = []  # type: list
     ext_gz = ".gz"  # type: str # set extension to match
 
-    registration_metrics_dir = os.path.join(bids_ds_path, "derivatives", "registrations", "reg_metrics")
+    # registration_metrics_dir = os.path.join(bids_ds_path, "derivatives", "registrations", "reg_metrics")
+    registration_metrics_dir = os.path.join(training_sub_ses_dir, "derivatives", "registrations", "reg_metrics")
+    # print(registration_metrics_dir)
 
-    for subdir, dirs, files in os.walk(bids_ds_path):
+    for subdir, dirs, files in os.walk(training_sub_ses_dir):#bids_ds_path):
         for file in files:
             ext = os.path.splitext(file)[-1].lower()  # get the file extension
             # save path of every positive patch
@@ -1593,6 +1602,7 @@ def extract_distance_thresholds(bids_ds_path: str,
                 ses = re.findall(r"ses-\w{6}\d+", subdir)[0]  # extract ses
                 sub_ses = f"{sub}_{ses}"
                 if sub_ses not in sub_ses_test:  # only use training sub_ses otherwise we might introduce a bias towards the locations of the aneurysms in the test set
+                    # print(sub_ses)
                     struct_2_tof_nc, struct_2_tof_mi, mni_2_struct_nc, mni_2_struct_2_mi = extract_reg_quality_metrics_one_sub(os.path.join(registration_metrics_dir, sub, ses))
                     registration_accurate_enough = check_registration_quality(reg_quality_metrics_threshold,
                                                                               struct_2_tof_nc,
@@ -1600,14 +1610,17 @@ def extract_distance_thresholds(bids_ds_path: str,
                                                                               mni_2_struct_nc,
                                                                               mni_2_struct_2_mi)  # type: bool
                     # only compute distances for subjects with correct registration
+                    # print(f"{sub_ses}: {registration_accurate_enough}")
                     if registration_accurate_enough:
                         all_subdirs.append(subdir)
                         all_files.append(file)
-
+    # print(all_subdirs)
+    # print(all_files)
     assert all_subdirs and all_files, "Input lists must be non-empty"
     out_list = Parallel(n_jobs=n_parallel_jobs, backend='threading')(delayed(extract_distance_one_aneurysm)(all_subdirs[idx],
                                                                                                             all_files[idx],
                                                                                                             bids_ds_path,
+                                                                                                            training_sub_ses_dir,
                                                                                                             overlapping,
                                                                                                             patch_side,
                                                                                                             landmarks_physical_space_path,
@@ -1674,7 +1687,8 @@ def extract_dark_fp_threshold_one_aneurysm(subdir: str,
     return intensity_ratio
 
 
-def extract_dark_fp_threshold(bids_dir: str,
+def extract_dark_fp_threshold(training_sub_ses_dir: str,
+                              bids_dir: str,
                               sub_ses_test: list,
                               nb_parallel_jobs: int) -> float:
     """This function computes the threshold that we use to discard false positive predictions which are too dark. If a prediction is correct,
@@ -1691,7 +1705,7 @@ def extract_dark_fp_threshold(bids_dir: str,
     ext_gz = ".gz"  # type: str # set extension to match
     regexp_sub = re.compile(r'sub')  # create a substring template to match
 
-    for subdir, dirs, files in os.walk(bids_dir):
+    for subdir, dirs, files in os.walk(training_sub_ses_dir):#bids_dir):
         for file in files:
             ext = os.path.splitext(file)[-1].lower()  # get the file extension
             # if file name matches the specified template and extension is correct and we're dealing with a BET volume (original volume after skull-stripping)
@@ -1699,9 +1713,9 @@ def extract_dark_fp_threshold(bids_dir: str,
                 sub = re.findall(r"sub-\d+", subdir)[0]
                 ses = re.findall(r"ses-\w{6}\d+", subdir)[0]  # extract ses
                 sub_ses = f"{sub}_{ses}"
-                if sub_ses not in sub_ses_test:  # only use training sub_ses otherwise we might introduce a bias towards the intensities of the aneurysms in the test set
-                    all_subdirs.append(subdir)
-                    all_files.append(file)
+                # if sub_ses not in sub_ses_test:  # only use training sub_ses otherwise we might introduce a bias towards the intensities of the aneurysms in the test set
+                all_subdirs.append(subdir)
+                all_files.append(file)
 
     assert all_subdirs and all_files, "Input lists must be non-empty"
     out_list = Parallel(n_jobs=nb_parallel_jobs, backend='threading')(delayed(extract_dark_fp_threshold_one_aneurysm)(all_subdirs[idx],
@@ -1712,7 +1726,8 @@ def extract_dark_fp_threshold(bids_dir: str,
     return dark_fp_threshold
 
 
-def extract_thresholds_for_anatomically_informed(bids_dir: str,
+def extract_thresholds_for_anatomically_informed(training_sub_ses_dir: str,
+                                                 bids_dir: str,
                                                  sub_ses_test: list,
                                                  unet_patch_side: int,
                                                  new_spacing: tuple,
@@ -1748,11 +1763,13 @@ def extract_thresholds_for_anatomically_informed(bids_dir: str,
 
     # extract registration quality metrics; they will be used to decide whether the sliding-window is anatomically-informed or not
     print("\nComputing registration quality thresholds...")
-    reg_quality_metrics_threshold = extract_registration_quality_metrics(bids_dir,
+    reg_quality_metrics_threshold = extract_registration_quality_metrics(training_sub_ses_dir,
+                                                                         bids_dir,
                                                                          sub_ses_test)  # type: tuple
     # we must extract some numerical thresholds to use for extracting vessel-like negative patches (i.e. neg patches similar to positive ones)
     print("\nComputing intensity thresholds...")
-    intensity_thresholds = extract_thresholds_of_intensity_criteria(bids_dir,
+    intensity_thresholds = extract_thresholds_of_intensity_criteria(training_sub_ses_dir,
+                                                                    bids_dir,
                                                                     sub_ses_test,
                                                                     unet_patch_side,
                                                                     new_spacing,
@@ -1766,7 +1783,8 @@ def extract_thresholds_for_anatomically_informed(bids_dir: str,
     # intensity_thresholds = (0.043146080218234, 0.017068370725809585, 0.11095124781131743, 0.0831613838672638, 18371.2)
     # we must also extract some numerical thresholds to use for computing the distances from the patch centers to the landmark points
     print("\nComputing distance thresholds...")
-    distances_thresholds = extract_distance_thresholds(bids_dir,
+    distances_thresholds = extract_distance_thresholds(training_sub_ses_dir,
+                                                       bids_dir,
                                                        reg_quality_metrics_threshold,
                                                        sub_ses_test,
                                                        nb_parallel_jobs,
@@ -1777,7 +1795,8 @@ def extract_thresholds_for_anatomically_informed(bids_dir: str,
 
     # we must also extract a numerical threshold to use for removing the false positives which are too dark
     print("\nComputing threshold for dark FP reduction...")
-    dark_fp_threshold = extract_dark_fp_threshold(bids_dir,
+    dark_fp_threshold = extract_dark_fp_threshold(training_sub_ses_dir,
+                                                  bids_dir,
                                                   sub_ses_test,
                                                   nb_parallel_jobs)
 
@@ -1880,7 +1899,9 @@ def sanity_check_inputs(unet_patch_side: int,
                         bids_dir: str,
                         training_outputs_path: str,
                         landmarks_physical_space_path: str,
-                        ground_truth_dir: str) -> None:
+                        ground_truth_dir: str,
+                        training_sub_ses_dir: str,
+                        demo_dir: str) -> None:
     """This function runs some sanity checks on the inputs of the sliding-window.
     Args:
         unet_patch_side: patch side of cubic patches
@@ -1928,6 +1949,8 @@ def sanity_check_inputs(unet_patch_side: int,
     assert os.path.exists(training_outputs_path), "Path {} does not exist".format(training_outputs_path)
     assert os.path.exists(landmarks_physical_space_path), "Path {} does not exist".format(landmarks_physical_space_path)
     assert os.path.exists(ground_truth_dir), "Path {} does not exist".format(ground_truth_dir)
+    assert os.path.exists(training_sub_ses_dir), "Path {} does not exist".format(training_sub_ses_dir)
+    assert os.path.exists(demo_dir), "Path {} does not exist".format(demo_dir)
 
 
 def str2bool(v: str) -> bool:

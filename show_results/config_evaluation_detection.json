@@ -1,4 +1,5 @@
 {
-	"prediction_dir": "/output/dir/of/inference/script/",
- 	"ground_truth_dir": "/downloadable/from/https://drive.google.com/drive/folders/17TZiP-ieYlicDk6Fm0hh_qAel4azWQhd?usp=sharing"
+	"prediction_dir": "/media/student/HDD 1/MDS22/keputusan/unique_id_for_this_run_Mar_07_2024_21h01m",
+ 	"ground_truth_dir": "/media/student/HDD 1/MDS22/Ground_Truth_CHUV_as_ADAM"
 }
+

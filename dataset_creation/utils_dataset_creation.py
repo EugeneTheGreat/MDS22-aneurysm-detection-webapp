@@ -1062,7 +1062,8 @@ def retrieve_intensity_conditions_one_sub(subdir: str,
         return None
 
 
-def extract_thresholds_of_intensity_criteria(data_path: str,
+def extract_thresholds_of_intensity_criteria(training_sub_ses_dir: str,
+                                             data_path: str,
                                              sub_ses_test: list,
                                              patch_side: int,
                                              new_spacing: tuple,
@@ -1091,16 +1092,16 @@ def extract_thresholds_of_intensity_criteria(data_path: str,
     # create new input lists to create positive patches in parallel
     all_subdirs = []
     all_files = []
-    for subdir, dirs, files in os.walk(data_path):
+    for subdir, dirs, files in os.walk(training_sub_ses_dir):#data_path):
         for file in files:
             ext = os.path.splitext(file)[-1].lower()  # get the file extension
             if regexp_sub.search(file) and ext == ext_gz and "Lesion" in file and "registrations" not in subdir and "Treated" not in file:
                 sub = re.findall(r"sub-\d+", subdir)[0]
                 ses = re.findall(r"ses-\w{6}\d+", subdir)[0]  # extract ses
                 sub_ses = "{}_{}".format(sub, ses)
-                if sub_ses not in sub_ses_test:  # only use training sub_ses otherwise we might introduce a bias towards the intensities of the aneurysms in the test set
-                    all_subdirs.append(subdir)
-                    all_files.append(file)
+                # if sub_ses not in sub_ses_test:  # only use training sub_ses otherwise we might introduce a bias towards the intensities of the aneurysms in the test set
+                all_subdirs.append(subdir)
+                all_files.append(file)
 
     assert all_subdirs and all_files, "Input lists must be non-empty"
     out_list = Parallel(n_jobs=n_parallel_jobs, backend='threading')(delayed(retrieve_intensity_conditions_one_sub)(all_subdirs[idx],

@@ -20,6 +20,9 @@ import tensorflow as tf
 import shutil
 from shutil import copyfile
 import time
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from PIL import Image
 from inference.utils_inference import extract_reg_quality_metrics_one_sub, retrieve_registration_params, resample_volume, load_nifti_and_resample, round_half_up, \
     extracting_conditions_are_met, create_tf_dataset, create_output_folder, check_registration_quality, compute_patient_wise_metrics, create_input_lists, \
     save_and_print_results, convert_mni_to_angio, extract_thresholds_for_anatomically_informed, load_file_from_disk, save_sliding_window_mask_to_disk, \
@@ -95,6 +98,7 @@ def inference_one_subject(subdir,
     sub = re.findall(r"sub-\d+", subdir)[0]  # extract sub
     ses = re.findall(r"ses-\w{6}\d+", subdir)[0]  # extract ses
     sub_ses = "{}_{}".format(sub, ses)
+    # print(sub_ses)
     assert len(sub) != 0, "Subject ID not found"
     assert len(ses) != 0, "Session not found"
 
@@ -160,7 +164,7 @@ def inference_one_subject(subdir,
 
             # extract registration quality metrics for this subject and check (with the thresholds) if the registration was accurate enough
             sub_quality_metrics = extract_reg_quality_metrics_one_sub(os.path.join(registration_metrics_dir, sub, ses))  # type: tuple
-            registration_accurate_enough = check_registration_quality(reg_quality_metrics_threshold, sub_quality_metrics)  # type: bool
+            registration_accurate_enough = check_registration_quality(reg_quality_metrics_threshold, sub_quality_metrics[0], sub_quality_metrics[1], sub_quality_metrics[2], sub_quality_metrics[3])  # type: bool
 
             # load anatomical landmark coordinates with pandas
             df_landmarks_tof_space = pd.DataFrame()  # type: pd.DataFrame # initialize as empty dataframe; it will be modified if registration_accurate_enough == True
@@ -200,11 +204,17 @@ def inference_one_subject(subdir,
                             if extracting_conditions_are_met(angio_patch_after_bet_scale_1, vessel_mni_patch, vessel_mni_volume_resampled, nii_volume_after_bet_resampled,
                                                              patch_center_coordinates_physical_space, unet_patch_side, df_landmarks_tof_space, registration_accurate_enough,
                                                              intensity_thresholds, distances_thresholds, anatomically_informed_sliding_window):
+                                # print(f"Extracting from {sub_ses}")
                                 # if all conditions are met, we found a good candidate patch
                                 patch_center_coords.append(patch_center_coordinates_resampled)  # append patch center to external list
                                 nb_samples += 1  # increment counter variable to keep track of how many samples are evaluated for this subject
                                 assert angio_patch_after_bet_scale_1.shape == (unet_patch_side, unet_patch_side, unet_patch_side), "Unexpected patch shape; expected ({},{},{})".format(unet_patch_side, unet_patch_side, unet_patch_side)
-                                angio_patch_after_bet_scale_1 = tf.image.per_image_standardization(angio_patch_after_bet_scale_1)  # standardize patch to have mean 0 and variance 1
+                                # print(angio_patch_after_bet_scale_1.shape)
+                                try:
+                                    angio_patch_after_bet_scale_1 = tf.image.per_image_standardization(angio_patch_after_bet_scale_1)  # standardize patch to have mean 0 and variance 1
+                                except:
+                                    print(f"Error standardising {sub_ses}")
+                                # print('Standardised')
                                 all_angio_patches_np_list.append(angio_patch_after_bet_scale_1)  # append standardized patch to external list
 
                                 # fill mask volume with ones; this is just used to visualize which are the patches that were retained in the sliding-window
@@ -213,9 +223,9 @@ def inference_one_subject(subdir,
                                                  k - shift_scale_1:k + shift_scale_1] += 1
 
             # uncomment line below for debugging
-            # print("Finished sliding window for {}".format(sub_ses))
-            # time_sliding_window = time.time()  # stop timer
-            # print_running_time(start, time_sliding_window, "Sliding-window {}_{}".format(sub, ses))
+            print("Finished sliding window for {}".format(sub_ses))
+            time_sliding_window = time.time()  # stop timer
+            print_running_time(start, time_sliding_window, "Sliding-window {}_{}".format(sub, ses))
 
             assert len(all_angio_patches_np_list) == nb_samples == len(patch_center_coords), "{}: mismatch between all_angio_patches_np_list, nb_samples and patch_center_coords".format(sub_ses)
             batched_dataset = create_tf_dataset(all_angio_patches_np_list, unet_batch_size)
@@ -257,6 +267,20 @@ def inference_one_subject(subdir,
             # ------------------------------------------------------ REMOVE TMP FOLDER -------------------------------------------------------
             if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
                 shutil.rmtree(tmp_path)
+            # ---------------------------------------------- SAVE SEGMENTATION VISUALISATIONS ------------------------------------------------
+            image = nib.load(os.path.join(bids_dir_path, sub, ses, "anat", f"{sub}_{ses}_angio.nii.gz")).get_fdata()
+            this_out_path = os.path.join(out_dir, sub, ses)
+            mask = nib.load(os.path.join(this_out_path, 'result.nii.gz')).get_fdata()
+
+            with open(os.path.join(this_out_path, 'result.txt'), 'r') as f:
+                lines = f.readlines()
+                results = [line[:-1].split(',') for line in lines]
+
+            for i, result in enumerate(results):
+                for axis in range(3):
+                    viz_save_path = os.path.join(this_out_path, f"result_{i}_axis_{axis}.png")
+                    save_visualisation(image, mask, axis, int(result[axis]), viz_save_path)
+
             # ------------------------------------------ COMPUTE DETECTION and SEGMENTATION METRICS ------------------------------------------
             out_metrics = compute_patient_wise_metrics(os.path.join(out_dir, sub, ses),
                                                        os.path.join(ground_truth_dir, sub, ses),
@@ -278,6 +302,43 @@ def inference_one_subject(subdir,
             else:
                 raise ValueError("Output dir exists but it's empty for {}_{}".format(sub, ses))
 
+def save_visualisation(img, mask, axis, slice_index, save_path, figsize=(24, 10)):
+    plt.ioff()
+    
+    if axis == 0:
+        view = 'Left-right view'
+        img_rot = Image.fromarray(img[slice_index, :, :]).transpose(Image.ROTATE_90) 
+        mask_rot = Image.fromarray(mask[slice_index, :, :]).transpose(Image.ROTATE_90) 
+    elif axis == 1:
+        view = 'Anterior-posterior view'
+        img_rot = Image.fromarray(img[:, slice_index, :]).transpose(Image.ROTATE_90) 
+        mask_rot = Image.fromarray(mask[:, slice_index, :]).transpose(Image.ROTATE_90) 
+    elif axis == 2:
+        view = 'Superior-inferior view'
+        img_rot = Image.fromarray(img[:, :, slice_index]).transpose(Image.ROTATE_90) 
+        mask_rot = Image.fromarray(mask[:, :, slice_index]).transpose(Image.ROTATE_90) 
+    else:
+        raise ValueError('Not a valid axis.')
+
+    # Plot the image
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+
+    axes[0].imshow(img_rot, cmap='gray')
+    axes[0].set_title(f'Without aneurysm mask overlay\n{view}')
+    axes[0].axis('off')
+
+    # Overlay the aneurysm mask on the image
+    cmap_colors = [(0, 0, 0, 0), (0.5, 0, 0.5)]  # Transparent for background, purple for mask
+    custom_cmap = ListedColormap(cmap_colors)
+    
+    axes[1].imshow(img_rot, cmap='gray')
+    axes[1].imshow(np.ma.masked_where(mask_rot == 0, mask_rot), cmap=custom_cmap, alpha=0.9)
+    axes[1].set_title(f'With aneurysm mask overlay\n{view}')
+    axes[1].axis('off')
+
+    plt.tight_layout()
+    
+    plt.savefig(save_path)
 
 def main():
     # the code inside here is run only when THIS script is run, and not just imported
@@ -288,7 +349,7 @@ def main():
     unet_batch_size = config_dict['unet_batch_size']
     unet_threshold = config_dict['unet_threshold']
     overlapping = config_dict['overlapping']
-    new_spacing = config_dict['new_spacing']
+    new_spacing = tuple(config_dict['new_spacing'])
     conv_filters = tuple(config_dict['conv_filters'])
     lr = config_dict['lr']  # type: float # learning rate
     lambda_loss = config_dict['lambda_loss']  # type: float # value that weights the two terms of the hybrid loss
@@ -320,13 +381,18 @@ def main():
     landmarks_physical_space_path = config_dict['landmarks_physical_space_path']
     inference_outputs_path = config_dict['inference_outputs_path']
 
+    # MDS22 args
+    training_sub_ses_dir = config_dict['training_sub_ses']
+    demo_dir = config_dict['demo_dir']
+
     # make sure that inputs are fine
     sanity_check_inputs(unet_patch_side, unet_batch_size, unet_threshold, overlapping, new_spacing, conv_filters, cv_folds, anatomically_informed_sliding_window,
                         test_time_augmentation, reduce_fp, max_fp, reduce_fp_with_volume, min_aneurysm_volume, remove_dark_fp, bids_dir, training_outputs_path,
-                        landmarks_physical_space_path, ground_truth_dir)
+                        landmarks_physical_space_path, ground_truth_dir, training_sub_ses_dir, demo_dir)
 
     #  ------------------ create input lists for running sliding-window in parallel across subjects
     all_subdirs, all_files = create_input_lists(bids_dir)
+    demo_subdirs, demo_files = create_input_lists(demo_dir)
 
     # ------------------ COPY config file to output directory
     out_date_hours_minutes = (datetime.today().strftime('%b_%d_%Y_%Hh%Mm'))  # type: str # save today's date
@@ -352,6 +418,17 @@ def main():
 
         assert os.path.exists(unet_checkpoint_path), "Path {} does not exist".format(unet_checkpoint_path)
 
+        demo_sub_ses_for_this_fold = []
+        for sub in os.listdir(demo_dir):
+            if sub.startswith('sub'):
+                for ses in os.listdir(os.path.join(demo_dir, sub)):
+                    if ses.startswith('ses'):
+                        if f'{sub}_{ses}' in sub_ses_test:
+                            demo_sub_ses_for_this_fold.append(f'{sub}_{ses}')
+
+        if len(demo_sub_ses_for_this_fold) == 0:
+            print("\nNo files for fold {} to run inference on".format(cv_fold))
+            continue
         # --------------------------------------- create network and load weights
         # define input and create U-Net model
         inputs = tf.keras.Input(shape=(unet_patch_side, unet_patch_side, unet_patch_side, 1), name='TOF_patch')
@@ -361,7 +438,8 @@ def main():
         unet.load_weights(os.path.join(unet_checkpoint_path, "my_checkpoint")).expect_partial()
 
         # --------------- compute thresholds for anatomically-informed sliding-window
-        reg_quality_metrics_threshold, intensity_thresholds, distances_thresholds, dark_fp_threshold = extract_thresholds_for_anatomically_informed(bids_dir,
+        reg_quality_metrics_threshold, intensity_thresholds, distances_thresholds, dark_fp_threshold = extract_thresholds_for_anatomically_informed(training_sub_ses_dir,
+                                                                                                                                                    bids_dir,
                                                                                                                                                     sub_ses_test,
                                                                                                                                                     unet_patch_side,
                                                                                                                                                     new_spacing,
@@ -379,9 +457,10 @@ def main():
         print("dark_fp_threshold = {}".format(dark_fp_threshold))
 
         # run patient-wise inference in parallel across subjects
-        out_metrics_list = Parallel(n_jobs=nb_parallel_jobs, backend='threading')(delayed(inference_one_subject)(all_subdirs[idx],
-                                                                                                                 all_files[idx],
-                                                                                                                 bids_dir,
+        print(f'Test sub-ses for this fold: {sub_ses_test}')
+        out_metrics_list = Parallel(n_jobs=nb_parallel_jobs, backend='threading')(delayed(inference_one_subject)(demo_subdirs[idx],
+                                                                                                                 demo_files[idx],
+                                                                                                                 demo_dir,#bids_dir,
                                                                                                                  sub_ses_test,
                                                                                                                  unet_checkpoint_path,
                                                                                                                  unet_patch_side,
@@ -403,7 +482,8 @@ def main():
                                                                                                                  overlapping=overlapping,
                                                                                                                  reduce_fp=reduce_fp,
                                                                                                                  reduce_fp_with_volume=reduce_fp_with_volume,
-                                                                                                                 remove_dark_fp=remove_dark_fp) for idx in range(len(all_subdirs)))
+                                                                                                                 remove_dark_fp=remove_dark_fp) for idx in range(len(demo_subdirs)))
+        
         # create unique dataframe with the metrics of all the subjects of this CV fold
         not_none_values = filter(None.__ne__, out_metrics_list)  # type: filter
         out_metrics_list = list(not_none_values)  # type: list  # remove None values

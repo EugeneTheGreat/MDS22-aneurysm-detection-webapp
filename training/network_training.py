@@ -122,6 +122,7 @@ def create_tf_dataset_from_patches_and_masks(all_angio_patches_list,
 
     dataset_ = tf.data.Dataset.from_tensor_slices((all_angio_patches_tensors, all_angio_masks_tensors))  # create tf.data.Dataset
     dataset_ = dataset_.shuffle(buffer_size_)  # shuffle dataset otherwise ADAM and CHUV samples may not be interleaved
+    print('end of create_tf_dataset_from_patches_and_masks')
 
     return dataset_, patch_side_, buffer_size_
 
@@ -191,13 +192,15 @@ def create_dataset_positives_parallel(pos_patches_path: str,
     # all_subdirs = all_subdirs[0:100]
     # all_files = all_files[0:100]
 
+    print('Loky start')
     out_list = Parallel(n_jobs=n_parallel_jobs, backend='loky')(delayed(create_dataset_positives_one_sub)(all_subdirs[idx],
                                                                                                           all_files[idx]) for idx in range(len(all_subdirs)))
-
+    print('Loky end')
     out_list_np = np.asarray(out_list)  # type: np.ndarray # convert from list to numpy array
     all_angio_patches_list = list(out_list_np[:, 0, ...])  # extract patches
     all_angio_masks_list = list(out_list_np[:, 1, ...])  # extract masks
 
+    print('Create tf dataset from patches')
     dataset, patch_side, buffer_size = create_tf_dataset_from_patches_and_masks(all_angio_patches_list, all_angio_masks_list)
 
     return dataset, patch_side, buffer_size
@@ -260,18 +263,23 @@ def create_dataset_negatives_parallel(neg_patches_path,
     assert all_subdirs and all_files, "Input lists must be non-empty"
 
     # UNCOMMENT LINES BELOW FOR QUICK debugging (only takes N patches)
-    # all_subdirs = all_subdirs[0:100]
-    # all_files = all_files[0:100]
-
+    print(len(all_subdirs), len(all_files))
+    all_subdirs = all_subdirs[0:200]
+    all_files = all_files[0:200]
+    print('Starting parallel for negatives')
     out_list = Parallel(n_jobs=n_parallel_jobs, backend='loky')(delayed(create_dataset_negatives_one_sub)(all_subdirs[idx],
                                                                                                           all_files[idx]) for idx in range(len(all_subdirs)))
-
+    print('End parallel for negatives')
+    # insufficient RAM here
+    print('converting out_list to numpy')
     out_list_np = np.asarray(out_list)  # type: np.ndarray # convert from list to numpy array
+    print('extracting patches')
     all_angio_patches_list = list(out_list_np[:, 0, ...])  # extract patches
+    print('extracting masks')
     all_angio_masks_list = list(out_list_np[:, 1, ...])  # extract masks
-
+    print('Starting create_tf_dataset for negatives')
     dataset, patch_side, buffer_size = create_tf_dataset_from_patches_and_masks(all_angio_patches_list, all_angio_masks_list)
-
+    print('End create_tf_dataset for negatives')
     return dataset, patch_side, buffer_size
 
 
@@ -294,10 +302,13 @@ def create_batched_augmented_tf_dataset(pos_patches_path: str,
         pos_patch_side (int): patch side of positive (and negative) patches
     """
     pos_dataset, pos_patch_side, pos_buffer_size = create_dataset_positives_parallel(pos_patches_path, subs_to_use, n_parallel_jobs)
+    print('Completed create_dataset_positives_parallel')
     neg_dataset, neg_patch_side, neg_buffer_size = create_dataset_negatives_parallel(neg_patches_path, subs_to_use, n_parallel_jobs)
+    print('Completed create_dataset_negatives_parallel')
     assert pos_patch_side == neg_patch_side, "Negative and positive samples have different dim"
 
     if augment:  # if we want to augment the training dataset
+        print('Now augmenting')
         augm_pos_dataset, orig_plus_augm_buffer_size = augment_dataset(pos_dataset, pos_dataset)  # we only augment the positive patches which are way less than the negatives
         buffer_size = neg_buffer_size + orig_plus_augm_buffer_size  # type: int # compute new buffer size
         print("\nThere are {} neg and {} aug pos sample ({} original and {} augmented)".format(neg_buffer_size,
@@ -395,6 +406,7 @@ def augment_dataset(tf_dataset,
     augmentations = [horizontal_flipping, vertical_flipping, rotate_270, rotate_180, rotate_90, adjust_contrast, gamma_correction, gaussian_noise]
     for augm in augmentations:
         # Apply the augmentation, running jobs in parallel
+        print(f'Augmentation: {augm}')
         augm_dataset = tf_dataset.map(lambda x, y: tf.py_function(func=augm, inp=[x, y], Tout=[tf.float32, tf.float32]),
                                       num_parallel_calls=tf.data.experimental.AUTOTUNE)
         out_dataset = out_dataset.concatenate(augm_dataset)  # concatenate augmented dataset to output dataset
@@ -542,7 +554,7 @@ def create_compiled_unet(inputs_: tf.keras.Input,
     outputs_ = tf.keras.layers.Conv3D(1, 1, activation='sigmoid')(bn7)
 
     model = tf.keras.Model(inputs=inputs_, outputs=outputs_)
-    model.compile(optimizer=tf.keras.optimizers.Adam(lr=learning_rate), loss=bce_dice_loss(lambda_loss), metrics=[dice_coeff, "binary_crossentropy"])
+    model.compile(optimizer=tf.keras.optimizers.legacy.Adam(lr=learning_rate), loss=bce_dice_loss(lambda_loss), metrics=[dice_coeff, "binary_crossentropy"])
 
     return model
 
