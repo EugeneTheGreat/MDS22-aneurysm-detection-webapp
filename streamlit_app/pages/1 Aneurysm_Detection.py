@@ -13,8 +13,6 @@ st.set_page_config(
 # change background colour of the app
 st.markdown(uiconf.pages_ui_config(), unsafe_allow_html=True)
 
-st.sidebar.title("Aneurysm Detection")
-
 st.title("Aneurysm Detection")
 
 ############################## Page Content ##############################

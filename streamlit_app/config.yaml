@@ -1,21 +1,26 @@
+cookie:
+  expiry_days: 30
+  key: brain_aneurysm
+  name: brain_aneurysm_cookie
 credentials:
   usernames:
     admin1:
       email: admin1@gmail.com
-      failed_login_attempts: 0 # Will be managed automatically
-      logged_in: False # Will be managed automatically
+      failed_login_attempts: 0
+      logged_in: false
       name: Admin 1
-      password: Admin123 # Will be hashed automatically
+      password: $2b$12$CAG5Zpaoz1nu7fTWCoWe6efIAyT1yomB490GtIz4/XRToFwBxEkNe
+    kokonen:
+      email: kokonen69@gmail.com
+      logged_in: false
+      name: Kokonen
+      password: $2b$12$2j6xx2Ru11/jvLfNEguIuuTzfIrQ.Kxpe6ElAXMM9hdQsa4xDF4H2
     user1:
       email: user1@gmail.com
-      failed_login_attempts: 0 # Will be managed automatically
-      logged_in: False # Will be managed automatically
+      failed_login_attempts: 0
+      logged_in: false
       name: User 1
-      password: User123 # Will be hashed automatically
-cookie:
-  expiry_days: 30
-  key: brain_aneurysm # Must be string
-  name: brain_aneurysm_cookie
+      password: $2b$12$sKiO8glUi1QkiVG5gaZiM.gXddMZjBRhIiaaMw0OM/h5E9dwcaj0u
 pre-authorized:
   emails:
   - test001@gmail.com
