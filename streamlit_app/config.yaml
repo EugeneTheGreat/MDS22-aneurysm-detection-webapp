@@ -10,17 +10,12 @@ credentials:
       logged_in: false
       name: Admin 1
       password: $2b$12$CAG5Zpaoz1nu7fTWCoWe6efIAyT1yomB490GtIz4/XRToFwBxEkNe
-    kokonen:
-      email: kokonen69@gmail.com
-      logged_in: false
-      name: Kokonen
-      password: $2b$12$2j6xx2Ru11/jvLfNEguIuuTzfIrQ.Kxpe6ElAXMM9hdQsa4xDF4H2
-    user1:
-      email: user1@gmail.com
+    guest:
+      email: guest@gmail.com
       failed_login_attempts: 0
       logged_in: false
-      name: User 1
-      password: $2b$12$sKiO8glUi1QkiVG5gaZiM.gXddMZjBRhIiaaMw0OM/h5E9dwcaj0u
+      name: Guest
+      password: Guest123
 pre-authorized:
   emails:
   - test001@gmail.com

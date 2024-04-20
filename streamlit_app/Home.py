@@ -1,10 +1,12 @@
 import streamlit as st
-import utils.ui_config as uiconf
 import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
 from streamlit_extras.stylable_container import stylable_container as container
 from streamlit_extras.card import card
+from streamlit_extras.let_it_rain import rain
+import utils.ui_config as uiconf
+import yaml
+from yaml.loader import SafeLoader
+import time 
 
 ############################## Page Logic ##############################
 
@@ -12,9 +14,6 @@ class HomePage:
     """
     A class that shows the home page of the web page. 
     """
-    # def __init__(self, is_signup):
-    #     self.is_signup = is_signup
-
     def set_page_config(self):
         """
         Sets the page configuration.
@@ -49,10 +48,17 @@ class HomePage:
             )
         
     def update_config(self):
+        """
+        Update the user details in the config.yaml file after updates.
+        Includes new registration, password update and user detail updates. 
+        """
         with open('config.yaml', 'w') as file:
             yaml.dump(config, file, default_flow_style=False)
 
     def toggle_is_signup(self):
+        """
+        Toggle to show either the sign up screen or the login screen. 
+        """
         if st.session_state.is_signup:
             st.session_state.is_signup = False
         elif not st.session_state.is_signup:
@@ -71,41 +77,72 @@ class HomePage:
         """
         Page login logic. 
         """
-        authenticator.login()
+        name, status, username = authenticator.login()
 
         placeholder = st.empty()
 
         if st.session_state["authentication_status"]:
-            logout_button = authenticator.logout("Logout", "sidebar")
-            st.session_state.sidebar_state = "expanded"
-            if logout_button:
-                st.markdown(
-                    """
-                    <style>
-                        [data-testid="collapsedControl"] {
-                            display: none
-                        }
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            placeholder.empty()
-            self.page_content()
+            if name == "Guest":
+                self.hide_sidebar("collapsed")
+
+                col1, col2 = st.columns([0.55, 0.45], gap="small")
+                with col1:
+                    guest_message = """
+                                    <p style="text-align:right">Interested? Login or sign up now!</p>
+                                    """
+                    st.markdown(guest_message, unsafe_allow_html=True)
+                with col2:
+                    logout_button = authenticator.logout("Login/SignUp", "main")
+
+                placeholder.empty()
+                self.page_content(have_detect_button=False)
+            else:
+                logout_button = authenticator.logout("Logout", "sidebar")
+                st.session_state.sidebar_state = "expanded"
+                if logout_button:
+                    st.markdown(
+                        """
+                        <style>
+                            [data-testid="collapsedControl"] {
+                                display: none
+                            }
+                        </style>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                placeholder.empty()
+                self.page_content()
 
         elif st.session_state["authentication_status"] is False:
             self.hide_sidebar("collapsed")
-            st.error("Username/password is incorrect")
-            st.error("Kindly sign up if you do not have an account! 🙂")
+            st.error('Username/password is incorrect! Kindly sign up if you do not have an account! 🙂')
 
             with placeholder.container():
-                st.button("Sign Up", on_click=self.toggle_is_signup)
+                col1, col2 = st.columns([0.55, 0.45], gap="small")
+
+                with col1:
+                    login_message = """
+                                    <p style="text-align:right">Don't have an account?  Sign up now!</p>
+                                    """
+                    st.markdown(login_message, unsafe_allow_html=True)
+                with col2:
+                    st.button("Sign Up", on_click=self.toggle_is_signup)
 
         elif st.session_state["authentication_status"] is None:
             self.hide_sidebar("collapsed")
-            st.warning("Please enter your username and password")
+            st.info('Please enter your username and password', icon="ℹ️")
+            st.info(':green[Guest Username: guest ; Guest Password: Guest123]', icon="✅")
 
             with placeholder.container():
-                st.button("Sign Up", on_click=self.toggle_is_signup)
+                col1, col2 = st.columns([0.55, 0.45], gap="small")
+
+                with col1:
+                    login_message = """
+                                    <p style="text-align:right">Don't have an account?  Sign up now!</p>
+                                    """
+                    st.markdown(login_message, unsafe_allow_html=True)
+                with col2:
+                    st.button("Sign Up", on_click=self.toggle_is_signup)
 
     def page_signup(self, authenticator):
         """
@@ -117,16 +154,27 @@ class HomePage:
             email_of_registered_user, username_of_registered_user, name_of_registered_user = authenticator.register_user(pre_authorization=False)
             if email_of_registered_user:
                 self.update_config()
+                rain(emoji="🎈", font_size=54, falling_speed=5,animation_length=3)
                 st.success('User registered successfully')
         except Exception as e:
             st.error(e)
 
-        st.button("Login", on_click=self.toggle_is_signup)
+        col1, col2 = st.columns([0.55, 0.45], gap="small")
 
-    def page_content(self):
+        with col1:
+            login_message = """
+                            <p style="text-align:right">Have an account?   Login now!</p>
+                            """
+            st.markdown(login_message, unsafe_allow_html=True)
+        with col2:
+            st.button("Login", on_click=self.toggle_is_signup)
+
+    def page_content(self, have_detect_button=True):
         """
         Displays the main content of the homepage after logging into the application. 
         """
+        st.title("Home")
+
         # the main columns in the home page
         col1, col2 = st.columns(2, gap="large")
 
@@ -168,10 +216,12 @@ class HomePage:
                 st.markdown(title_txt, unsafe_allow_html=True)
                 st.markdown(subheader_txt, unsafe_allow_html=True)
                 st.markdown(body_txt, unsafe_allow_html=True)
-                get_started_button = st.button("Get Started")
+                
+                if have_detect_button:
+                    get_started_button = st.button("Get Started")
 
-                if get_started_button:
-                    st.switch_page("pages/1 Aneurysm_Detection.py")
+                    if get_started_button:
+                        st.switch_page("pages/1 Aneurysm_Detection.py")
 
         with col2:
             with container(
