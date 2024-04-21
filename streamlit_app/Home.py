@@ -6,7 +6,6 @@ from streamlit_extras.let_it_rain import rain
 import utils.ui_config as uiconf
 import yaml
 from yaml.loader import SafeLoader
-import time 
 
 ############################## Page Logic ##############################
 
@@ -81,9 +80,11 @@ class HomePage:
 
         placeholder = st.empty()
 
-        if st.session_state["authentication_status"]:
-            if name == "Guest":
+        if st.session_state["authentication_status"]: # authenticated
+            if name == "Guest": # if guest login
                 self.hide_sidebar("collapsed")
+                placeholder.empty()
+                self.page_content(have_detect_button=False)
 
                 col1, col2 = st.columns([0.55, 0.45], gap="small")
                 with col1:
@@ -93,10 +94,7 @@ class HomePage:
                     st.markdown(guest_message, unsafe_allow_html=True)
                 with col2:
                     logout_button = authenticator.logout("Login/SignUp", "main")
-
-                placeholder.empty()
-                self.page_content(have_detect_button=False)
-            else:
+            else: # user login
                 logout_button = authenticator.logout("Logout", "sidebar")
                 st.session_state.sidebar_state = "expanded"
                 if logout_button:
@@ -113,9 +111,10 @@ class HomePage:
                 placeholder.empty()
                 self.page_content()
 
-        elif st.session_state["authentication_status"] is False:
+        elif st.session_state["authentication_status"] is False: # cannot authenticate user 
             self.hide_sidebar("collapsed")
             st.error('Username/password is incorrect! Kindly sign up if you do not have an account! 🙂')
+            st.info(':green[Guest Username: guest ; Guest Password: Guest123]', icon="✅")
 
             with placeholder.container():
                 col1, col2 = st.columns([0.55, 0.45], gap="small")
@@ -128,7 +127,7 @@ class HomePage:
                 with col2:
                     st.button("Sign Up", on_click=self.toggle_is_signup)
 
-        elif st.session_state["authentication_status"] is None:
+        elif st.session_state["authentication_status"] is None: # no authentication yet 
             self.hide_sidebar("collapsed")
             st.info('Please enter your username and password', icon="ℹ️")
             st.info(':green[Guest Username: guest ; Guest Password: Guest123]', icon="✅")

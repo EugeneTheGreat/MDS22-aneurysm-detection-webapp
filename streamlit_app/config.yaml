@@ -15,7 +15,12 @@ credentials:
       failed_login_attempts: 0
       logged_in: false
       name: Guest
-      password: Guest123
+      password: $2b$12$VtZrReGxPBUF8LGwmJA1deUp3xJLFSpsSzHtwU9gQEt6yMe8P6CnK
+    kokonen:
+      email: kokonen6969@gmail.com
+      logged_in: false
+      name: Kokonen
+      password: $2b$12$lrwHNFBjSP1YxlrgYVsNAeQMz2/z6OPcHGMrwRFl2gsGtPCPcUp4i
 pre-authorized:
   emails:
   - test001@gmail.com
