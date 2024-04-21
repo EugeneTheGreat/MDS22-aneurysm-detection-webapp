@@ -7,28 +7,37 @@ import utils.ui_config as uiconf
 import yaml
 from yaml.loader import SafeLoader
 
-############################## Page Logic ##############################
+############################## Home Page Class ##############################
+
 
 class HomePage:
     """
-    A class that shows the home page of the web page. 
+    A class that shows the home page of the web page.
     """
+
     def set_page_config(self):
         """
         Sets the page configuration.
         """
         st.set_page_config(
-            page_title = "Home",
-            layout = "wide",
-            initial_sidebar_state = st.session_state.get("sidebar_state", "expanded"),
+            page_title="Home",
+            layout="wide",
+            initial_sidebar_state=st.session_state.get("sidebar_state", "expanded"),
         )
 
         # change background colour of the app
         st.markdown(uiconf.pages_ui_config(), unsafe_allow_html=True)
         st.session_state.sidebar_state = "collapsed"
 
-        if 'is_signup' not in st.session_state:
-            st.session_state['is_signup'] = False
+        # initialise the session state for determining the display of login or signup screen
+        if "is_signup" not in st.session_state:
+            st.session_state["is_signup"] = False
+
+    def get_user_name(self):
+        """
+        Returns the name of the logged in user.
+        """
+        return st.session_state["name"]
 
     def hide_sidebar(self, sb_state):
         """
@@ -36,54 +45,55 @@ class HomePage:
         """
         st.session_state.sidebar_state = sb_state
         st.markdown(
-                """
+            """
             <style>
                 [data-testid="collapsedControl"] {
                     display: none
                 }
             </style>
             """,
-                unsafe_allow_html=True,
-            )
-        
+            unsafe_allow_html=True,
+        )
+
     def update_config(self):
         """
         Update the user details in the config.yaml file after updates.
-        Includes new registration, password update and user detail updates. 
+        Includes new registration, password update and user detail updates.
         """
-        with open('config.yaml', 'w') as file:
+        with open("config.yaml", "w") as file:
             yaml.dump(config, file, default_flow_style=False)
 
     def toggle_is_signup(self):
         """
-        Toggle to show either the sign up screen or the login screen. 
+        Toggle to show either the sign up screen or the login screen.
         """
         if st.session_state.is_signup:
             st.session_state.is_signup = False
         elif not st.session_state.is_signup:
-            st.session_state.is_signup = True 
-        
+            st.session_state.is_signup = True
+
     def page_authentication(self, authenticator):
         """
-        Display either the sign up page or login page. 
+        Display either the sign up page or login page.
         """
         if st.session_state.is_signup:
             self.page_signup(authenticator)
         elif not st.session_state.is_signup:
             self.page_login(authenticator)
-        
+
     def page_login(self, authenticator):
         """
-        Page login logic. 
+        Page login logic.
         """
         name, status, username = authenticator.login()
 
         placeholder = st.empty()
 
-        if st.session_state["authentication_status"]: # authenticated
-            if name == "Guest": # if guest login
+        if st.session_state["authentication_status"]:  # authenticated
+            if name == "Guest":  # if guest login
                 self.hide_sidebar("collapsed")
                 placeholder.empty()
+                st.title(f'Welcome *{self.get_user_name()}*!')
                 self.page_content(have_detect_button=False)
 
                 col1, col2 = st.columns([0.55, 0.45], gap="small")
@@ -94,7 +104,7 @@ class HomePage:
                     st.markdown(guest_message, unsafe_allow_html=True)
                 with col2:
                     logout_button = authenticator.logout("Login/SignUp", "main")
-            else: # user login
+            else:  # user login
                 logout_button = authenticator.logout("Logout", "sidebar")
                 st.session_state.sidebar_state = "expanded"
                 if logout_button:
@@ -109,12 +119,13 @@ class HomePage:
                         unsafe_allow_html=True,
                     )
                 placeholder.empty()
+                st.title(f'Welcome back *{self.get_user_name()}*!')
                 self.page_content()
 
-        elif st.session_state["authentication_status"] is False: # cannot authenticate user 
+        elif st.session_state["authentication_status"] is False:  # cannot authenticate user
             self.hide_sidebar("collapsed")
-            st.error('Username/password is incorrect! Kindly sign up if you do not have an account! 🙂')
-            st.info(':green[Guest Username: guest ; Guest Password: Guest123]', icon="✅")
+            st.error("Username/password is incorrect! Kindly sign up if you do not have an account! 🙂")
+            st.info(":green[Guest Username: guest ; Guest Password: Guest123]", icon="✅")
 
             with placeholder.container():
                 col1, col2 = st.columns([0.55, 0.45], gap="small")
@@ -127,10 +138,10 @@ class HomePage:
                 with col2:
                     st.button("Sign Up", on_click=self.toggle_is_signup)
 
-        elif st.session_state["authentication_status"] is None: # no authentication yet 
+        elif st.session_state["authentication_status"] is None:  # no authentication yet
             self.hide_sidebar("collapsed")
-            st.info('Please enter your username and password', icon="ℹ️")
-            st.info(':green[Guest Username: guest ; Guest Password: Guest123]', icon="✅")
+            st.info("Please enter your username and password", icon="ℹ️")
+            st.info(":green[Guest Username: guest ; Guest Password: Guest123]", icon="✅")
 
             with placeholder.container():
                 col1, col2 = st.columns([0.55, 0.45], gap="small")
@@ -145,16 +156,17 @@ class HomePage:
 
     def page_signup(self, authenticator):
         """
-        Page sign up logic. 
+        Page sign up logic.
         """
         self.hide_sidebar("collapsed")
-               
+
         try:
             email_of_registered_user, username_of_registered_user, name_of_registered_user = authenticator.register_user(pre_authorization=False)
+
             if email_of_registered_user:
                 self.update_config()
-                rain(emoji="🎈", font_size=54, falling_speed=5,animation_length=3)
-                st.success('User registered successfully')
+                rain(emoji="🎈", font_size=54, falling_speed=5, animation_length=3)
+                st.success("User registered successfully")
         except Exception as e:
             st.error(e)
 
@@ -170,10 +182,8 @@ class HomePage:
 
     def page_content(self, have_detect_button=True):
         """
-        Displays the main content of the homepage after logging into the application. 
+        Displays the main content of the homepage after logging into the application.
         """
-        st.title("Home")
-
         # the main columns in the home page
         col1, col2 = st.columns(2, gap="large")
 
@@ -215,7 +225,7 @@ class HomePage:
                 st.markdown(title_txt, unsafe_allow_html=True)
                 st.markdown(subheader_txt, unsafe_allow_html=True)
                 st.markdown(body_txt, unsafe_allow_html=True)
-                
+
                 if have_detect_button:
                     get_started_button = st.button("Get Started")
 
@@ -236,7 +246,6 @@ class HomePage:
                 st.write(
                     "Image source: [Source 1](https://www.hopkinsmedicine.org/health/conditions-and-diseases/cerebral-aneurysm), [Source 2](https://www.barrowneuro.org/condition/brain-aneurysm/), [Source 3](https://www.froedtert.com/brain-aneurysm)"
                 )
-
 
         # the links to papers for aneurysm
         col3, col4, col5 = st.columns(3, gap="small")
@@ -334,7 +343,7 @@ class HomePage:
 
 ############################## Main Function ##############################
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     home = HomePage()
     home.set_page_config()
 
@@ -350,6 +359,3 @@ if __name__ == '__main__':
     )
 
     home.page_authentication(authenticator)
-
-    
-
