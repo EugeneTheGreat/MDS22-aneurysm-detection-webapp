@@ -45,12 +45,12 @@ class ProfilePage:
                     """
                     {
                         border-radius: 25px;
-                        padding-top: 30px;
+                        padding-top: 20px;
                         padding-bottom: 30px;
-                        padding-left: 20px;
+                        padding-left: 40px;
                         background-color: #C2D7EA;
-                        margin-top: 30px;
-                        margin-bottom: 100px
+                        margin-top: 10px;
+                        margin-bottom: 50px
                     }
                     """,
                 ],
@@ -62,7 +62,7 @@ class ProfilePage:
                             <h4 style="color:black; text-align:left">{st.session_state["name"]}</h4>
                             """
                 
-                col1, col2 = st.columns([0.1, 0.9], gap="small")
+                col1, col2 = st.columns([0.12, 0.88], gap="small")
 
                 with col1:
                     st.markdown(username_title, unsafe_allow_html=True)

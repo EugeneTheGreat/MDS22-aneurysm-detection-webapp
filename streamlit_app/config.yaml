@@ -22,6 +22,11 @@ credentials:
       logged_in: false
       name: Kokonen
       password: $2b$12$53TkNKhvvF5k5CqEQ6GPN.YVilN3BqCa5Bk2Q.zQdTgzOza0uhXCS
+    taylor:
+      email: ts000@gmail.com
+      logged_in: false
+      name: Taylor
+      password: $2b$12$x.MR4VDKeIw58h9A4ox6VOm43COUqtZ5y7jObx.nbiOA4bvlsVI8q
 pre-authorized:
   emails:
   - test001@gmail.com
