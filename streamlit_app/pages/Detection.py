@@ -35,26 +35,26 @@ def main():
         st.write("Uploaded file path:", save_folder)
 
         if st.button('Detect and Segment Aneurysms'):
-                # url = 'http://127.0.0.1:5000/predict'
-                # response = requests.post(url, json={'file_path': tmp_file_path})
-                prediction = predict(save_path)
+            # url = 'http://127.0.0.1:5000/predict'
+            # response = requests.post(url, json={'file_path': tmp_file_path})
+            prediction = predict(save_path)
 
 
-                # Display segmented image
-                st.subheader('Segmented Image with Detected Aneurysms')
-                # Load the NIfTI file
-                nii_img = nib.load("C:\\Users\\navee\\Downloads\\Aneurysm_Detection-main\\Aneurysm_Detection-main\\upload\\sub-001_ses-20101222_desc-angio_N4bfc_brain_mask.nii")
-                img_data = nii_img.get_fdata()
+            # Display segmented image
+            st.subheader('Segmented Image with Detected Aneurysms')
+            # Load the NIfTI file
+            nii_img = nib.load("C:\\Users\\navee\\Downloads\\Aneurysm_Detection-main\\Aneurysm_Detection-main\\upload\\sub-001_ses-20101222_desc-angio_N4bfc_brain_mask.nii")
+            img_data = nii_img.get_fdata()
 
-                st.set_option('deprecation.showPyplotGlobalUse', False)
-                # Display the middle slice of the image
-                middle_slice = img_data.shape[2] // 2
-                plt.imshow(img_data[:, :, middle_slice], cmap='gray')
-                plt.axis('off')  # Turn off axis
-                st.pyplot()  # Display the plot in Streamlit
-                files = glob.glob(r'C:\\Users\\navee\\Downloads\\Aneurysm_Detection-main\\Aneurysm_Detection-main\\upload\*')
-                for items in files:
-                    os.remove(items)
+            st.set_option('deprecation.showPyplotGlobalUse', False)
+            # Display the middle slice of the image
+            middle_slice = img_data.shape[2] // 2
+            plt.imshow(img_data[:, :, middle_slice], cmap='gray')
+            plt.axis('off')  # Turn off axis
+            st.pyplot()  # Display the plot in Streamlit
+            files = glob.glob(r'C:\\Users\\navee\\Downloads\\Aneurysm_Detection-main\\Aneurysm_Detection-main\\upload\*')
+            for items in files:
+                os.remove(items)
 
     
 
