@@ -10,6 +10,11 @@ credentials:
       logged_in: false
       name: Admin 1
       password: $2b$12$CAG5Zpaoz1nu7fTWCoWe6efIAyT1yomB490GtIz4/XRToFwBxEkNe
+    admin2:
+      email: admin2@yahoo.com
+      logged_in: false
+      name: Admin
+      password: $2b$12$o5AAc2vmhPJj37AnGmXAhewCMRMPEkgDwdmzshK8/VC9SUSCG9eIW
     guest:
       email: guest@gmail.com
       failed_login_attempts: 0
@@ -24,6 +29,7 @@ credentials:
       password: $2b$12$53TkNKhvvF5k5CqEQ6GPN.YVilN3BqCa5Bk2Q.zQdTgzOza0uhXCS
     taylor:
       email: ts000@gmail.com
+      failed_login_attempts: 0
       logged_in: false
       name: Taylor
       password: $2b$12$x.MR4VDKeIw58h9A4ox6VOm43COUqtZ5y7jObx.nbiOA4bvlsVI8q

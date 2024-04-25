@@ -1,0 +1,21 @@
+{	
+	"bids_dataset_path": "/media/student/HDD 1/MDS22/dataset", 	
+	"patch_side": 64,
+	"desired_spacing": [0.39, 0.39, 0.55],
+ 	"overlapping": 0.5,
+	"mni_landmark_points_path": "../extra_files/Landmarks_LPS_mm_Dec_05_2020.csv",
+	"out_dataset_path": "/media/student/HDD 1/MDS22/training_dataset",
+	"id_out_dataset": "unique_identifier",
+	"subs_chuv_with_weak_labels_path": "../extra_files/patients_with_weak_labels.pkl",
+	"subs_chuv_with_voxelwise_labels_path": "../extra_files/patients_with_voxelwise_labels.pkl",
+	"jobs_in_parallel": 4,
+	"sub_ses_test": [],
+
+	"vessel_like_neg_patches": 20,
+	"random_neg_patches": 10,
+	"landmark_patches": "True",
+
+	"pos_patches": 8,
+	"refine_weak_labels": "False",
+	"convert_voxelwise_labels_into_weak": "False"
+}

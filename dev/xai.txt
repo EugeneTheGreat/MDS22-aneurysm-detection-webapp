@@ -1,0 +1,46 @@
+for i, patch in enumerate(all_angio_patches_np_list):
+    if i in pos_patches_idxs:    
+        # volume_tensor = tf.convert_to_tensor(patch, dtype=tf.float32)
+        volume_tensor = tf.expand_dims(patch, axis=0)
+        # Define a gradient tape to compute gradients
+        with tf.GradientTape() as tape:
+            tape.watch(volume_tensor)
+            # Forward pass through the model
+            predictions = unet(volume_tensor, training=False)  # Disable training mode
+            # Compute loss
+            loss = predictions[:, :, :, :, 0]  # Assuming binary segmentation (foreground class)
+    
+        # Compute gradients of loss with respect to volume tensor
+        gradients = tape.gradient(loss, volume_tensor)
+        # Compute gradients magnitude
+        gradients_magnitude = tf.sqrt(tf.reduce_mean(tf.square(gradients), axis=-1))
+        # Generate Grad-CAM heatmap
+        heatmap = tf.nn.relu(tf.reduce_sum(gradients * volume_tensor, axis=-1))
+        heatmap /= tf.reduce_max(heatmap)
+
+        heatmap_nifti = nib.Nifti1Image(heatmap.numpy(), aff_resampled)  # Assuming identity affine matrix for simplicity
+        nib.save(heatmap_nifti, f'/home/student/Documents/MDS22/heatmap_test/heatmap_{i}.nii.gz')
+with open('/home/student/Documents/MDS22/heatmap_test/coords.txt', 'w') as fp:
+    for coord in patch_center_coords:
+        fp.write("%s\n" % str(coord))
+            # img_sitk = sitk.ReadImage(os.path.join(this_out_path, 'result.nii.gz'), sitk.sitkFloat32)
+            # img_sitk_array = sitk.GetArrayFromImage(img_sitk)
+
+            # ct_patch_chunk_list, last_patch_number = get_image_array_and_give_chunk(image_array=img_sitk_array, patch_slice=64)
+            # # ct_patch_chunk_list = []
+            # # for result in results:
+            # #     ct_patch_chunk_list.append(img_sitk_array[int(result[0]):int(result[0])+64])
+                
+            # first_heatmap = guided_gradcam_3d(build_model, ct_patch_chunk_list[0], 1)
+            # heatmap_concat = first_heatmap
+
+            # for i in range(1,(len(ct_patch_chunk_list)-1)):
+            #     get_heatmap = guided_gradcam_3d(build_model, ct_patch_chunk_list[i], 1)
+            #     heatmap_concat = np.concatenate((heatmap_concat, get_heatmap), axis=0)
+
+            # last_heatmap = guided_gradcam_3d(build_model, ct_patch_chunk_list[-1], 1)
+            # heatmap_concat  = np.concatenate((heatmap_concat, last_heatmap[last_patch_number:, :, :]), axis=0)
+            # # heatmap_concat  = np.concatenate((heatmap_concat, last_heatmap[img_sitk_array.shape[0]-1:, :, :]), axis=0)
+            # s_itk_image = sitk.GetImageFromArray(heatmap_concat)
+            # s_itk_image.CopyInformation(img_sitk)
+            # sitk.WriteImage(s_itk_image, os.path.join(this_out_path, 'xai.nii.gz'))
