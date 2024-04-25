@@ -69,6 +69,31 @@ class ProfilePage:
                 with col2:
                     st.markdown(username, unsafe_allow_html=True)
 
+        # set the style of the tabs 
+        st.markdown("""
+                    <style>
+                        .stTabs [data-baseweb="tab-list"] {
+                            gap: 12px;
+                        }
+
+                        .stTabs [data-baseweb="tab"] {
+                            height: 40px;
+                            white-space: pre-wrap;
+                            border-radius: 10px 10px 10px 10px;
+                            gap: 5px;
+                            padding-top: 10px;
+                            padding-bottom: 10px;
+                            padding-left: 10px;
+                            padding-right: 10px;
+                            margin-bottom: 10px;
+                        }
+
+                        .stTabs [aria-selected="true"] {
+                            background-color: #C2D7EA;
+                        }
+
+                    </style>""", unsafe_allow_html=True)
+
         tab1, tab2 = st.tabs(["Reset Password", "Update Details"])
 
         with tab1:
