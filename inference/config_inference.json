@@ -30,7 +30,7 @@
 	"training_outputs_path_adam": "../extra_files/Train_Outputs_whole_adam_ds",
 
 	"ground_truth_dir": "/media/student/HDD 1/MDS22/Ground_Truth_CHUV_as_ADAM",
-	"id_output_dir": "unique_id_for_this_run",
+	"id_output_dir": "run",
 	"landmarks_physical_space_path": "../extra_files/Landmarks_LPS_mm_Dec_05_2020.csv",
 	"inference_outputs_path": "/media/student/HDD 1/MDS22/demo_keputusan"
 }
