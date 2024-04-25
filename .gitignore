@@ -1,0 +1,8 @@
+# macOS Files
+**/.DS_Store
+
+# generated files
+__pycache__
+
+# streamlit files
+.streamlit
