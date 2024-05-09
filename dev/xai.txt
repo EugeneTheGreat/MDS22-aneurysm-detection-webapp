@@ -44,3 +44,38 @@ with open('/home/student/Documents/MDS22/heatmap_test/coords.txt', 'w') as fp:
             # s_itk_image = sitk.GetImageFromArray(heatmap_concat)
             # s_itk_image.CopyInformation(img_sitk)
             # sitk.WriteImage(s_itk_image, os.path.join(this_out_path, 'xai.nii.gz'))
+
+            def get_image_array_and_give_chunk(image_array, patch_slice):
+    divide_integer = image_array.shape[0] // patch_slice
+    reminder = image_array.shape[0] % patch_slice
+    print('CT Volume_Shape={}'.format(image_array.shape))
+    print('Devide_integer={}'.format(divide_integer))
+    print('Reminder={}'.format(reminder))
+    print('Total of {} + {} ={} Should ={}'.format(patch_slice*divide_integer, reminder, patch_slice*divide_integer+reminder, image_array.shape[0]))
+
+    lastpatch_starts_from = (image_array.shape[0]) - patch_slice
+    # print(lastpatch_starts_from)
+
+    patch_list=[]
+    patch_start=0
+    patch_end = patch_slice
+    for i in range(divide_integer):
+        #print(patch_start)
+        #print(patch_end)
+        ct_volume = image_array[patch_start:patch_end,:,:]
+        #print(ct_volume.shape)
+        patch_list.append(ct_volume)
+        patch_start += patch_slice
+        patch_end += patch_slice
+
+    last_slice_number_would_be=image_array.shape[0]
+    # print(last_slice_number_would_be)
+    last_patch_when_making_nifty=(patch_slice)-reminder
+    # print(last_patch_When_making_nifty)
+    Slice_will_start_from_here=last_slice_number_would_be-patch_slice
+    # print(Slice_will_start_from_here)
+    last_patch = image_array[Slice_will_start_from_here:,:,:]
+    # last_patch.shape
+    patch_list.append(last_patch)
+
+    return patch_list, last_patch_when_making_nifty

@@ -110,11 +110,7 @@ class HomePage:
                 st.title(f'Welcome back *{self.get_user_name()}*!')
                 self.page_content()
 
-                logout_button = authenticator.logout("Logout", "sidebar", "home_logout")
-                if logout_button:
-                    self.hide_sidebar("collapsed")
-                    print("Log out")
-                    st.rerun()
+                authenticator.logout("Logout", "sidebar", "home_logout")
 
         elif st.session_state["authentication_status"] is False:  # cannot authenticate user
             self.hide_sidebar("collapsed")

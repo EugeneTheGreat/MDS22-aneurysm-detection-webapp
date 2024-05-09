@@ -22,7 +22,7 @@
 	"all_test_sub_ses_inhouse": "/home/student/Documents/MDS22/Aneurysm_Detection_dev/fixed_pickles/all_test_subs_inhouse.pkl",
  	"training_outputs_path": "/home/student/Documents/MDS22/Aneurysm_Detection_dev/fixed_pickles/Train_Outputs_Aug_16_2021_chuv_weak_plus_voxelwise_pretrain_adam_github/",
 	"training_sub_ses": "/media/student/HDD 1/MDS22/training_sub_ses",
-	"demo_dir": "/media/student/HDD 1/MDS22/demo_sub_ses",
+	"demo_dir": "/media/student/HDD 1/MDS22/dataset",
 
 
 	"only_pretrain_on_adam": "False",
