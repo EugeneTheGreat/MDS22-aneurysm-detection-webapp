@@ -281,41 +281,58 @@ def inference_one_subject(subdir,
                 lines = f.readlines()
                 results = [line[:-1].split(',') for line in lines]
 
+            os.makedirs(os.path.join(this_out_path, 'original'), exist_ok=True)
+            os.makedirs(os.path.join(this_out_path, 'segmentation'), exist_ok=True)
+
             for i, result in enumerate(results):
                 for axis in range(3):
-                    viz_save_path = os.path.join(this_out_path, f"result_{i}_axis_{axis}.png")
-                    save_visualisation(image, mask, axis, int(result[axis]), viz_save_path)
+                    slice = int(result[axis])
+                    image_save_path = os.path.join(this_out_path, 'original', f"original_{i}_axis_{axis}_slice_{slice}.png")
+                    segm_save_path = os.path.join(this_out_path, 'segmentation', f"segm_{i}_axis_{axis}_slice_{slice}.png")
+                    save_visualisation(image, mask, axis, int(result[axis]), image_save_path, segm_save_path)
 
             # ---------------------------------------------- XAI ------------------------------------------------
-            # unet_onnx, _ = tf2onnx.convert.from_keras(unet)
-            # unet_torch = ConvertModel(unet_onnx)
-            # unet_medcam = medcam.inject(unet_torch, label=1, output_dir="attention_maps", save_maps=True)
-
-            # for i, patch in enumerate(all_angio_patches_np_list):
-            #     if i in pos_patches_idxs:
-            #         # print(type(patch))
-            #         # print(patch.shape)
-            #         volume_tensor = tf.expand_dims(patch, axis=0)
-            #         # print(type(volume_tensor))
-            #         # print(volume_tensor.shape)
-            #         torch_tensor = torch.tensor(volume_tensor.numpy())
-            #         print(type(torch_tensor))
-            #         print(torch_tensor.shape)
-            #         unet_medcam(torch_tensor)
             unet_gradcam = tf.keras.models.Model([unet.inputs], [unet.get_layer(unet.layers[-1].name).output, unet.output])
-            # first_heatmap = guided_gradcam_3d(unet_gradcam, all_angio_patches_np_list[0], 1)
-            # heatmap_concat = first_heatmap
+            # print(unet.summary())
+            # print(unet_gradcam.summary())
             
-            # for i in range(1,(len(all_angio_patches_np_list))):
-            #     get_heatmap = guided_gradcam_3d(unet_gradcam, all_angio_patches_np_list[i], 1)
-            #     heatmap_concat = np.concatenate((heatmap_concat, get_heatmap), axis=0)
-            print(len(pos_patches_idxs))
+            heatmaps = []
             for i, patch in enumerate(all_angio_patches_np_list):
                 if i in pos_patches_idxs:
                     print(f'Patch shape: {patch.shape}')
-                    heatmap = guided_gradcam_3d(unet_gradcam, patch, 1)
-                    s_itk_image = sitk.GetImageFromArray(heatmap)
-                    sitk.WriteImage(s_itk_image, os.path.join(this_out_path, f'xai{i}.nii.gz'))
+                    heatmap = kaggle_gradcam_3d(unet_gradcam, patch, 1)
+                    heatmaps.append(heatmap)
+                    # s_itk_image = sitk.GetImageFromArray(heatmap)
+                    # sitk.WriteImage(s_itk_image, os.path.join(this_out_path, f'xai{i}.nii.gz'))
+
+            overlay = np.zeros(image.shape)
+            counter = np.zeros(image.shape)
+            pos_patch_coords = [coords for i, coords in enumerate(patch_center_coords) if i in pos_patches_idxs]
+            print(len(pos_patch_coords))
+
+            for coords, heatmap in zip(pos_patch_coords, heatmaps):
+                # Extract the coordinates
+                x, y, z = coords
+                
+                start_x, end_x = max(0, x - unet_patch_side // 2), min(overlay.shape[0], x + unet_patch_side // 2)
+                start_y, end_y = max(0, y - unet_patch_side // 2), min(overlay.shape[1], y + unet_patch_side // 2)
+                start_z, end_z = max(0, z - unet_patch_side // 2), min(overlay.shape[2], z + unet_patch_side // 2)
+
+                if not all(dim == unet_patch_side for dim in overlay[start_x:end_x, start_y:end_y, start_z:end_z].shape):
+                    heatmap = heatmap[:end_x - start_x, :end_y - start_y, :end_z - start_z]
+
+                overlay[start_x:end_x, start_y:end_y, start_z:end_z] += heatmap
+                counter[start_x:end_x, start_y:end_y, start_z:end_z] += 1
+
+            overlay /= np.maximum(counter, 1)
+
+            os.makedirs(os.path.join(this_out_path, 'explanation'), exist_ok=True)
+
+            for i, result in enumerate(results):
+                for axis in range(3):
+                    slice = int(result[axis])
+                    exp_save_path = os.path.join(this_out_path, 'explanation', f"explanation_{i}_axis_{axis}_slice_{slice}.png")
+                    save_explanation(image, overlay, axis, int(result[axis]), exp_save_path)
 
             # ------------------------------------------ COMPUTE DETECTION and SEGMENTATION METRICS ------------------------------------------
             out_metrics = compute_patient_wise_metrics(os.path.join(out_dir, sub, ses),
@@ -338,89 +355,89 @@ def inference_one_subject(subdir,
             else:
                 raise ValueError("Output dir exists but it's empty for {}_{}".format(sub, ses))
 
-def save_visualisation(img, mask, axis, slice_index, save_path, figsize=(24, 10)):
+def save_visualisation(img, mask, axis, slice_index, img_save_path, segm_save_path, figsize=(10, 10)):
     plt.ioff()
     
     if axis == 0:
-        view = 'Left-right view'
         img_rot = Image.fromarray(img[slice_index, :, :]).transpose(Image.ROTATE_90) 
         mask_rot = Image.fromarray(mask[slice_index, :, :]).transpose(Image.ROTATE_90) 
     elif axis == 1:
-        view = 'Anterior-posterior view'
         img_rot = Image.fromarray(img[:, slice_index, :]).transpose(Image.ROTATE_90) 
         mask_rot = Image.fromarray(mask[:, slice_index, :]).transpose(Image.ROTATE_90) 
     elif axis == 2:
-        view = 'Superior-inferior view'
         img_rot = Image.fromarray(img[:, :, slice_index]).transpose(Image.ROTATE_90) 
         mask_rot = Image.fromarray(mask[:, :, slice_index]).transpose(Image.ROTATE_90) 
     else:
         raise ValueError('Not a valid axis.')
 
     # Plot the image
-    fig, axes = plt.subplots(1, 2, figsize=figsize)
+    fig, axes = plt.subplots(1, 1, figsize=figsize)
 
-    axes[0].imshow(img_rot, cmap='gray')
-    axes[0].set_title(f'Without aneurysm mask overlay\n{view}')
-    axes[0].axis('off')
+    axes.imshow(img_rot, cmap='gray')
+    axes.axis('off')
+
+    plt.tight_layout()
+    plt.savefig(img_save_path)
+    plt.close()
+
+    plt.ioff()
 
     # Overlay the aneurysm mask on the image
     cmap_colors = [(0, 0, 0, 0), (0.5, 0, 0.5)]  # Transparent for background, purple for mask
     custom_cmap = ListedColormap(cmap_colors)
     
-    axes[1].imshow(img_rot, cmap='gray')
-    axes[1].imshow(np.ma.masked_where(mask_rot == 0, mask_rot), cmap=custom_cmap, alpha=0.9)
-    axes[1].set_title(f'With aneurysm mask overlay\n{view}')
-    axes[1].axis('off')
+    fig, axes = plt.subplots(1, 1, figsize=figsize)
+
+    axes.imshow(img_rot, cmap='gray')
+    axes.imshow(np.ma.masked_where(mask_rot == 0, mask_rot), cmap=custom_cmap, alpha=0.9)
+    axes.axis('off')
 
     plt.tight_layout()
-    
-    plt.savefig(save_path)
+    plt.savefig(segm_save_path)
     plt.close()
 
 ################ XAI functions #####################
-def get_image_array_and_give_chunk(image_array, patch_slice):
-    divide_integer = image_array.shape[0] // patch_slice
-    reminder = image_array.shape[0] % patch_slice
-    print('CT Volume_Shape={}'.format(image_array.shape))
-    print('Devide_integer={}'.format(divide_integer))
-    print('Reminder={}'.format(reminder))
-    print('Total of {} + {} ={} Should ={}'.format(patch_slice*divide_integer, reminder, patch_slice*divide_integer+reminder, image_array.shape[0]))
+def kaggle_gradcam_3d(grad_model, img, pred_index=1):
+    img_exp = tf.expand_dims(img, axis=-1)
+    img_exp = tf.expand_dims(img_exp, axis=0)
 
-    lastpatch_starts_from = (image_array.shape[0]) - patch_slice
-    # print(lastpatch_starts_from)
+    # Then, we compute the gradient of the top predicted class for our input image
+    # with respect to the activations of the last conv layer
+    with tf.GradientTape() as tape:
+        last_conv_layer_output, preds = grad_model(img_exp)
+        if pred_index is None:
+            pred_index = tf.argmax(preds[0])
+        class_channel = preds[:, pred_index]
 
-    patch_list=[]
-    patch_start=0
-    patch_end = patch_slice
-    for i in range(divide_integer):
-        #print(patch_start)
-        #print(patch_end)
-        ct_volume = image_array[patch_start:patch_end,:,:]
-        #print(ct_volume.shape)
-        patch_list.append(ct_volume)
-        patch_start += patch_slice
-        patch_end += patch_slice
+    # This is the gradient of the output neuron (top predicted or chosen)
+    # with regard to the output feature map of the last conv layer
+    grads = tape.gradient(class_channel, last_conv_layer_output)
 
-    last_slice_number_would_be=image_array.shape[0]
-    # print(last_slice_number_would_be)
-    last_patch_when_making_nifty=(patch_slice)-reminder
-    # print(last_patch_When_making_nifty)
-    Slice_will_start_from_here=last_slice_number_would_be-patch_slice
-    # print(Slice_will_start_from_here)
-    last_patch = image_array[Slice_will_start_from_here:,:,:]
-    # last_patch.shape
-    patch_list.append(last_patch)
+    # This is a vector where each entry is the mean intensity of the gradient
+    # over a specific feature map channel (equivalent to global average pooling)
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2, 3))
 
-    return patch_list, last_patch_when_making_nifty
+    # We multiply each channel in the feature map array
+    # by 'how important this channel is' with regard to the top predicted class
+    # then sum all the channels to obtain the heatmap class activation
+    last_conv_layer_output = last_conv_layer_output[0]
+    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
+
+    # For visualization purpose, we will also normalize the heatmap between 0 & 1
+    # Notice that we clip the heatmap values, which is equivalent to applying ReLU
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    print(f'Heatmap shape: {heatmap.shape}')
+    return heatmap.numpy()
 
 def guided_gradcam_3d(grad_model, ct_io, class_index):
     # Create a graph that outputs target convolution and output
-    grad_model = grad_model
     input_ct_io = tf.expand_dims(ct_io, axis=-1)
     input_ct_io = tf.expand_dims(input_ct_io, axis=0)
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(input_ct_io)
         loss = predictions[:, class_index]
+        
     # Extract filters and gradients
     output = conv_outputs[0]
     grads = tape.gradient(loss, conv_outputs)[0]
@@ -443,6 +460,31 @@ def guided_gradcam_3d(grad_model, ct_io, class_index):
     heatmap = (capi - capi.min()) / (capi.max() - capi.min())
     print(f'Heatmap shape: {heatmap.shape}')
     return heatmap
+
+def save_explanation(img, overlay, axis, slice_index, save_path, figsize=(10, 10)):
+    plt.ioff()
+    
+    if axis == 0:
+        img_rot = Image.fromarray(img[slice_index, :, :]).transpose(Image.ROTATE_90) 
+        overlay_rot = Image.fromarray(overlay[slice_index, :, :]).transpose(Image.ROTATE_90) 
+    elif axis == 1:
+        img_rot = Image.fromarray(img[:, slice_index, :]).transpose(Image.ROTATE_90) 
+        overlay_rot = Image.fromarray(overlay[:, slice_index, :]).transpose(Image.ROTATE_90) 
+    elif axis == 2:
+        img_rot = Image.fromarray(img[:, :, slice_index]).transpose(Image.ROTATE_90) 
+        overlay_rot = Image.fromarray(overlay[:, :, slice_index]).transpose(Image.ROTATE_90) 
+    else:
+        raise ValueError('Not a valid axis.')
+    
+    fig, axes = plt.subplots(1, 1, figsize=figsize)
+    
+    axes.imshow(img_rot, cmap='gray')
+    axes.imshow(np.ma.masked_where(overlay_rot == 0, overlay_rot), cmap='jet', alpha=0.6)
+    axes.axis('off')
+
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
 
 #####################################
 
@@ -545,24 +587,24 @@ def main():
         unet.load_weights(os.path.join(unet_checkpoint_path, "my_checkpoint")).expect_partial()
 
         # --------------- compute thresholds for anatomically-informed sliding-window
-        # reg_quality_metrics_threshold, intensity_thresholds, distances_thresholds, dark_fp_threshold = extract_thresholds_for_anatomically_informed(training_sub_ses_dir,
-        #                                                                                                                                             bids_dir,
-        #                                                                                                                                             sub_ses_test,
-        #                                                                                                                                             unet_patch_side,
-        #                                                                                                                                             new_spacing,
-        #                                                                                                                                             inference_outputs_path,
-        #                                                                                                                                             nb_parallel_jobs,
-        #                                                                                                                                             overlapping,
-        #                                                                                                                                             landmarks_physical_space_path,
-        #                                                                                                                                             out_final_location_dir,
-        #                                                                                                                                             only_pretrain_on_adam,
+        reg_quality_metrics_threshold, intensity_thresholds, distances_thresholds, dark_fp_threshold = extract_thresholds_for_anatomically_informed(training_sub_ses_dir,
+                                                                                                                                                    bids_dir,
+                                                                                                                                                    sub_ses_test,
+                                                                                                                                                    unet_patch_side,
+                                                                                                                                                    new_spacing,
+                                                                                                                                                    inference_outputs_path,
+                                                                                                                                                    nb_parallel_jobs,
+                                                                                                                                                    overlapping,
+                                                                                                                                                    landmarks_physical_space_path,
+                                                                                                                                                    out_final_location_dir,
+                                                                                                                                                    only_pretrain_on_adam,
         #                                                                                                                                             bids_dir_adam)
 
         # shortcut for fold 1
-        reg_quality_metrics_threshold = (-3.7767321825027467, -0.3142017084360121)
-        intensity_thresholds = (0.02095201499003311, 0.01069367995681348, 0.08009335100650787, 0.06967665851116181, 109345.2)
-        distances_thresholds = (5.697663283326865, 34.77490834806133)
-        dark_fp_threshold = 0.9596146753538289
+        # reg_quality_metrics_threshold = (-3.327880220413208, -0.3540602338314058)
+        # intensity_thresholds = (0.02406213231162661, 0.011230110944480292, 0.08618692681193352, 0.07938898056745529, 126396.275)
+        # distances_thresholds = (5.597333735158686, 35.023377434873375)
+        # dark_fp_threshold = 0.9596146753538289
 
         print("\nreg_quality_metrics_threshold = {}".format(reg_quality_metrics_threshold))
         print("intensity_thresholds = {}".format(intensity_thresholds))
