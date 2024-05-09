@@ -85,7 +85,7 @@ class HomePage:
         """
         Page login logic.
         """
-        name, status, username = authenticator.login()
+        name, _, _ = authenticator.login()
 
         placeholder = st.empty()
 
@@ -105,22 +105,12 @@ class HomePage:
                 with col2:
                     logout_button = authenticator.logout("Login/SignUp", "main")
             else:  # user login
-                logout_button = authenticator.logout("Logout", "sidebar")
-                st.session_state.sidebar_state = "expanded"
-                if logout_button:
-                    st.markdown(
-                        """
-                        <style>
-                            [data-testid="collapsedControl"] {
-                                display: none
-                            }
-                        </style>
-                        """,
-                        unsafe_allow_html=True,
-                    )
                 placeholder.empty()
+                st.session_state.sidebar_state = "expanded"
                 st.title(f'Welcome back *{self.get_user_name()}*!')
                 self.page_content()
+
+                authenticator.logout("Logout", "sidebar", "home_logout")
 
         elif st.session_state["authentication_status"] is False:  # cannot authenticate user
             self.hide_sidebar("collapsed")
@@ -284,8 +274,8 @@ class HomePage:
             card(
                 title="About Brain Aneurysms",
                 text="",
-                image="https://www.dradamrennie.com/wp-content/uploads/2018/01/aneurysm-2.jpg",
-                url="https://www.dradamrennie.com/portfolio/brain-aneurysms/",
+                image="http://myhealth.moh.gov.my/wp-content/uploads/brain_aneurysm1.jpg",
+                url="http://myhealth.moh.gov.my/en/brain-aneurysm/",
                 styles={
                     "card": {
                         "width": "320px",

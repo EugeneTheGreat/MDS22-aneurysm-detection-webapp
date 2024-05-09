@@ -300,7 +300,7 @@ def inference_one_subject(subdir,
             for i, patch in enumerate(all_angio_patches_np_list):
                 if i in pos_patches_idxs:
                     print(f'Patch shape: {patch.shape}')
-                    heatmap = kaggle_gradcam_3d(unet_gradcam, patch, 1)
+                    heatmap = guided_gradcam_3d(unet_gradcam, patch, 1)
                     heatmaps.append(heatmap)
                     # s_itk_image = sitk.GetImageFromArray(heatmap)
                     # sitk.WriteImage(s_itk_image, os.path.join(this_out_path, f'xai{i}.nii.gz'))
@@ -308,10 +308,16 @@ def inference_one_subject(subdir,
             overlay = np.zeros(image.shape)
             counter = np.zeros(image.shape)
             pos_patch_coords = [coords for i, coords in enumerate(patch_center_coords) if i in pos_patches_idxs]
+            print(image.shape)
             print(len(pos_patch_coords))
+            print(pos_patch_coords)
 
             for coords, heatmap in zip(pos_patch_coords, heatmaps):
                 # Extract the coordinates
+                for i, coord in enumerate(coords):
+                    if coord > image.shape[i]:
+                        coords[i] = image.shape[i]
+
                 x, y, z = coords
                 
                 start_x, end_x = max(0, x - unet_patch_side // 2), min(overlay.shape[0], x + unet_patch_side // 2)
@@ -320,6 +326,11 @@ def inference_one_subject(subdir,
 
                 if not all(dim == unet_patch_side for dim in overlay[start_x:end_x, start_y:end_y, start_z:end_z].shape):
                     heatmap = heatmap[:end_x - start_x, :end_y - start_y, :end_z - start_z]
+                    # print(image.shape)
+                    # print(start_z)
+                    # print(end_z)
+                    # print(overlay[start_x:end_x, start_y:end_y, start_z:end_z].shape)
+                    # print(heatmap.shape)
 
                 overlay[start_x:end_x, start_y:end_y, start_z:end_z] += heatmap
                 counter[start_x:end_x, start_y:end_y, start_z:end_z] += 1
@@ -587,24 +598,24 @@ def main():
         unet.load_weights(os.path.join(unet_checkpoint_path, "my_checkpoint")).expect_partial()
 
         # --------------- compute thresholds for anatomically-informed sliding-window
-        reg_quality_metrics_threshold, intensity_thresholds, distances_thresholds, dark_fp_threshold = extract_thresholds_for_anatomically_informed(training_sub_ses_dir,
-                                                                                                                                                    bids_dir,
-                                                                                                                                                    sub_ses_test,
-                                                                                                                                                    unet_patch_side,
-                                                                                                                                                    new_spacing,
-                                                                                                                                                    inference_outputs_path,
-                                                                                                                                                    nb_parallel_jobs,
-                                                                                                                                                    overlapping,
-                                                                                                                                                    landmarks_physical_space_path,
-                                                                                                                                                    out_final_location_dir,
-                                                                                                                                                    only_pretrain_on_adam,
+        # reg_quality_metrics_threshold, intensity_thresholds, distances_thresholds, dark_fp_threshold = extract_thresholds_for_anatomically_informed(training_sub_ses_dir,
+        #                                                                                                                                             bids_dir,
+        #                                                                                                                                             sub_ses_test,
+        #                                                                                                                                             unet_patch_side,
+        #                                                                                                                                             new_spacing,
+        #                                                                                                                                             inference_outputs_path,
+        #                                                                                                                                             nb_parallel_jobs,
+        #                                                                                                                                             overlapping,
+        #                                                                                                                                             landmarks_physical_space_path,
+        #                                                                                                                                             out_final_location_dir,
+        #                                                                                                                                             only_pretrain_on_adam,
         #                                                                                                                                             bids_dir_adam)
 
-        # shortcut for fold 1
-        # reg_quality_metrics_threshold = (-3.327880220413208, -0.3540602338314058)
-        # intensity_thresholds = (0.02406213231162661, 0.011230110944480292, 0.08618692681193352, 0.07938898056745529, 126396.275)
-        # distances_thresholds = (5.597333735158686, 35.023377434873375)
-        # dark_fp_threshold = 0.9596146753538289
+        # thresholds shortcut
+        reg_quality_metrics_threshold = (-3.327880220413208, -0.3540602338314058)
+        intensity_thresholds = (0.02406213231162661, 0.011230110944480292, 0.08618692681193352, 0.07938898056745529, 126396.275)
+        distances_thresholds = (5.597333735158686, 35.023377434873375)
+        dark_fp_threshold = 0.9596146753538289
 
         print("\nreg_quality_metrics_threshold = {}".format(reg_quality_metrics_threshold))
         print("intensity_thresholds = {}".format(intensity_thresholds))
