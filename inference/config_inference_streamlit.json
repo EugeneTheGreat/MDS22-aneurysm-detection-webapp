@@ -25,7 +25,7 @@
     "reduce_fp_with_volume": "False",
     "min_aneurysm_volume": 0.7,
     "remove_dark_fp": "False",
-    "bids_dir_inhouse": "not/needed",
+    "bids_dir_inhouse": "/media/student/HDD 1/MDS22/dataset",
     "all_test_sub_ses_inhouse": "../fixed_pickles/all_test_subs_inhouse.pkl",
     "training_outputs_path": "../fixed_pickles/Train_Outputs_Aug_16_2021_chuv_weak_plus_voxelwise_pretrain_adam_github/",
     "training_sub_ses": "../training_sub_ses",

@@ -500,6 +500,7 @@ def save_explanation(img, overlay, axis, slice_index, save_path, figsize=(10, 10
 #####################################
 
 def main():
+    print(os.getcwd())
     # the code inside here is run only when THIS script is run, and not just imported
     config_dict = load_config_file()  # load input config file
 
