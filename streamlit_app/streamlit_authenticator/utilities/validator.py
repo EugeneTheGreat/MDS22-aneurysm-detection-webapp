@@ -81,4 +81,23 @@ class Validator:
         """
         pattern = r"^[a-zA-Z0-9_-]{1,20}$"
         return bool(re.match(pattern, username))
+    def validate_password(self, password: str) -> bool:
+        """
+        Validates the password based on the specified criteria.
+
+        Parameters
+        ----------
+        password : str
+            The password to be validated.
+
+        Returns
+        -------
+        bool
+            True if the password meets the criteria, False otherwise.
+        """
+        # Regular expression pattern to match the password criteria
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$"
+        
+        # Check if the password matches the pattern and meets the length criteria
+        return bool(re.match(pattern, password))
     

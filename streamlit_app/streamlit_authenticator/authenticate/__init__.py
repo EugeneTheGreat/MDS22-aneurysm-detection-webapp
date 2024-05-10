@@ -339,20 +339,25 @@ class Authenticate:
         elif location == 'sidebar':
             register_user_form = st.sidebar.form('Register user')
 
+        name_info_message = "Name must have minimum 1 character and maximum 100 characters. It can only consist of characters a-z or A-Z or space"
+        username_info_message = "User name must have minimum 1 character and maximum 20 characters. It can only consist of characters a-z or A-Z or numerics or - or _"
+        pw_info_message = "User password must have at least one small capital alphabet, at least one capital alphabet, at least one numerical number, at least one special character '{@$!%*?&'} and the length must be between 8 to 20 characters"
+        repeat_pw_info_message = "Please type out the same password. Do NOT copy and paste!"
+
         register_user_form.subheader('Register User' if 'Form name' not in fields
                                      else fields['Form name'])
         new_name = register_user_form.text_input('Name' if 'Name' not in fields
-                                                 else fields['Name'])
+                                                 else fields['Name'], help=name_info_message)
         new_email = register_user_form.text_input('Email' if 'Email' not in fields
                                                   else fields['Email'])
         new_username = register_user_form.text_input('Username' if 'Username' not in fields
-                                                     else fields['Username']).lower()
+                                                     else fields['Username'], help=username_info_message).lower()
         new_password = register_user_form.text_input('Password' if 'Password' not in fields
-                                                     else fields['Password'], type='password')
+                                                     else fields['Password'], type='password', help=pw_info_message)
         new_password_repeat = register_user_form.text_input('Repeat password'
                                                             if 'Repeat password' not in fields
                                                             else fields['Repeat password'],
-                                                            type='password')
+                                                            type='password', help=repeat_pw_info_message)
         if register_user_form.form_submit_button('Register' if 'Register' not in fields
                                                  else fields['Register']):
             return self.authentication_handler.register_user(new_password, new_password_repeat,
