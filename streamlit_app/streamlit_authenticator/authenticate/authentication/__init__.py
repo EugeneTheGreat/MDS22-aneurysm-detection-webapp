@@ -63,6 +63,8 @@ class AuthenticationHandler:
             st.session_state['username'] = None
         if 'logout' not in st.session_state:
             st.session_state['logout'] = None
+        if 'email' not in st.session_state:
+            st.session_state["email"] = None 
     def check_credentials(self, username: str, password: str,
                           max_concurrent_users: Optional[int]=None,
                           max_login_attempts: Optional[int]=None) -> bool:
@@ -151,12 +153,14 @@ class AuthenticationHandler:
         if username:
             st.session_state['username'] = username
             st.session_state['name'] = self.credentials['usernames'][username]['name']
+            st.session_state['email'] = self.credentials['usernames'][username]['email']
             st.session_state['authentication_status'] = True
             self._record_failed_login_attempts(username, reset=True)
             self.credentials['usernames'][username]['logged_in'] = True
         elif token:
             st.session_state['username'] = token['username']
             st.session_state['name'] = self.credentials['usernames'][token['username']]['name']
+            st.session_state['email'] = self.credentials['usernames'][token['username']]['email']
             st.session_state['authentication_status'] = True
             self.credentials['usernames'][token['username']]['logged_in'] = True
     def execute_logout(self):
@@ -440,6 +444,8 @@ class AuthenticationHandler:
             self._update_entry(username, field, new_value)
             if field == 'name':
                 st.session_state['name'] = new_value
+            if field == 'email':
+                st.session_state['email'] = new_value
             return True
         else:
             raise UpdateError('New and current values are the same')

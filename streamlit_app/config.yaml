@@ -12,9 +12,27 @@ credentials:
       password: $2b$12$CAG5Zpaoz1nu7fTWCoWe6efIAyT1yomB490GtIz4/XRToFwBxEkNe
     admin2:
       email: admin2@yahoo.com
+      failed_login_attempts: 0
       logged_in: false
       name: Admin
       password: $2b$12$o5AAc2vmhPJj37AnGmXAhewCMRMPEkgDwdmzshK8/VC9SUSCG9eIW
+    admin3:
+      email: admin3@gmail.student.edu
+      failed_login_attempts: 0
+      logged_in: false
+      name: Admin Three
+      password: $2b$12$/Jgba8Tva3GtYleygd4FN.ziL.LR/fVMBZWKA74WfwNXeqUsWZaIu
+    admin4:
+      email: admin4@gmail.student.edu
+      failed_login_attempts: 0
+      logged_in: false
+      name: Admin Four
+      password: $2b$12$Tz3L0hYp6fBlsWHxZrtjWuQs3ncZ05dBcfnv6RQiWLX.D7.9hKGai
+    admin5:
+      email: admin5@gmail.com
+      logged_in: false
+      name: Admin Five
+      password: $2b$12$/sqv8e9YOj9s/GX9UTf1v.Yeuulj3AYrL8nJ159q/r9bE/QdU9.i.
     guest:
       email: guest@gmail.com
       failed_login_attempts: 0

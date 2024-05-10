@@ -177,6 +177,8 @@ class Authenticate:
             False: incorrect credentials, True: correct credentials.
         str
             Username of the authenticated user.
+        str
+            The email of the user. 
         """
         if fields is None:
             fields = {'Form name':'Login', 'Username':'Username', 'Password':'Password',
@@ -212,7 +214,7 @@ class Authenticate:
                         self.authentication_handler.execute_login(username=username)
                         self.cookie_handler.set_cookie()
         return (st.session_state['name'], st.session_state['authentication_status'],
-                st.session_state['username'])
+                st.session_state['username'], st.session_state['email'])
     def logout(self, button_name: str='Logout', location: str='main', key: Optional[str]=None):
         """
         Creates a logout button.
@@ -248,6 +250,8 @@ class Authenticate:
 
                 for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
                     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+
+                st.switch_page("Home.py")
         elif location == 'sidebar':
             if st.sidebar.button(button_name, key):
                 self.authentication_handler.execute_logout()
@@ -268,6 +272,8 @@ class Authenticate:
 
                 for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
                     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+
+                st.switch_page("Home.py")
         elif location == 'unrendered':
             if st.session_state['authentication_status']:
                 self.authentication_handler.execute_logout()
@@ -288,6 +294,8 @@ class Authenticate:
 
                 for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
                     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+
+                st.switch_page("Home.py")
 
 
     def register_user(self, location: str='main', pre_authorization: bool=True,
