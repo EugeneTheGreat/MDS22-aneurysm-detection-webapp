@@ -56,6 +56,7 @@ def main():
     st.title('Intracranial Aneurysm Detection and Segmentation')
 
     st.subheader('Upload TOF-MRA Image (.zip)')
+    st.warning('File types accepted is only .zip. Please upload only a single .zip file!', icon="⚠️")
     uploaded_file = st.file_uploader("Upload input zip file (.zip)...", type="zip")
 
     os.makedirs(os.path.join(STREAMLIT_PATH, 'upload'), exist_ok=True)

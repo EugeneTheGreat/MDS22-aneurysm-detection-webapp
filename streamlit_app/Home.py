@@ -81,13 +81,14 @@ class HomePage:
         elif not st.session_state.is_signup:
             self.page_login(authenticator)
 
+
     def page_login(self, authenticator):
         """
         Page login logic.
         """
-        name, _, _ = authenticator.login()
+        name, _, _, _ = authenticator.login()
 
-        placeholder = st.empty()
+        placeholder = st.empty() # an empty container to hold some UI components 
 
         if st.session_state["authentication_status"]:  # authenticated
             if name == "Guest":  # if guest login
@@ -103,22 +104,20 @@ class HomePage:
                                     """
                     st.markdown(guest_message, unsafe_allow_html=True)
                 with col2:
-                    logout_button = authenticator.logout("Login/SignUp", "main")
-            else:  # user login
+                    # go back to the authentication page 
+                    authenticator.logout("Login/SignUp", "main")
+            else:  # registered user login
                 placeholder.empty()
                 st.session_state.sidebar_state = "expanded"
                 st.title(f'Welcome back *{self.get_user_name()}*!')
                 self.page_content()
 
-                authenticator.logout("Logout", "sidebar", "home_logout")
-
         elif st.session_state["authentication_status"] is False:  # cannot authenticate user
             self.hide_sidebar("collapsed")
             st.error("Username/password is incorrect! Kindly sign up if you do not have an account! 🙂")
-            st.info(":green[Guest Username: guest ; Guest Password: Guest123]", icon="✅")
 
             with placeholder.container():
-                col1, col2 = st.columns([0.55, 0.45], gap="small")
+                col1, col2, col3, col4 = st.columns([0.5, 0.1, 0.02, 0.38], gap="small")
 
                 with col1:
                     login_message = """
@@ -127,14 +126,32 @@ class HomePage:
                     st.markdown(login_message, unsafe_allow_html=True)
                 with col2:
                     st.button("Sign Up", on_click=self.toggle_is_signup)
+
+                with col3:
+                    or_text = """
+                                    <p style="text-align:center">or</p>
+                                    """
+                    st.markdown(or_text, unsafe_allow_html=True)
+
+                with col4:
+                    guest_login_button = st.button("Guest Login")
+
+                    if guest_login_button:
+                        username = "guest"
+                        pw = "Guest123"
+                        if authenticator.authentication_handler.check_credentials(username,
+                                                                                    pw,
+                                                                                    None,
+                                                                                    None):
+                            authenticator.authentication_handler.execute_login(username=username)
+                            authenticator.cookie_handler.set_cookie()
 
         elif st.session_state["authentication_status"] is None:  # no authentication yet
             self.hide_sidebar("collapsed")
             st.info("Please enter your username and password", icon="ℹ️")
-            st.info(":green[Guest Username: guest ; Guest Password: Guest123]", icon="✅")
 
             with placeholder.container():
-                col1, col2 = st.columns([0.55, 0.45], gap="small")
+                col1, col2, col3, col4 = st.columns([0.5, 0.1, 0.02, 0.38], gap="small")
 
                 with col1:
                     login_message = """
@@ -143,6 +160,25 @@ class HomePage:
                     st.markdown(login_message, unsafe_allow_html=True)
                 with col2:
                     st.button("Sign Up", on_click=self.toggle_is_signup)
+
+                with col3:
+                    or_text = """
+                                    <p style="text-align:center">or</p>
+                                    """
+                    st.markdown(or_text, unsafe_allow_html=True)
+
+                with col4:
+                    guest_login_button = st.button("Guest Login")
+
+                    if guest_login_button:
+                        username = "guest"
+                        pw = "Guest123"
+                        if authenticator.authentication_handler.check_credentials(username,
+                                                                                    pw,
+                                                                                    None,
+                                                                                    None):
+                            authenticator.authentication_handler.execute_login(username=username)
+                            authenticator.cookie_handler.set_cookie()
 
     def page_signup(self, authenticator):
         """
@@ -244,8 +280,8 @@ class HomePage:
             card(
                 title="What Is Brain Aneurysm?",
                 text="",
-                image="https://www.mayoclinic.org/-/media/kcms/gbs/patient-consumer/images/2013/08/26/10/36/ds00582_im02314_r7_brainaneurysmthu_jpg.jpg",
-                url="https://www.mayoclinic.org/diseases-conditions/brain-aneurysm/symptoms-causes/syc-20361483",
+                image="https://i0.wp.com/www.bafound.org/wp-content/uploads/2019/01/180091.jpg?w=400&ssl=1",
+                url="https://www.bafound.org/about-brain-aneurysms/brain-aneurysm-basics/",
                 styles={
                     "card": {
                         "width": "320px",

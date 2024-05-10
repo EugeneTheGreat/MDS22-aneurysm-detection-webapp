@@ -39,6 +39,9 @@ class ProfilePage:
         """
         The content of the profile page. 
         """
+        # the logout button
+        authenticator.logout("Logout", "sidebar", "main_logout")
+
         with container(
                 key="profile_container",
                 css_styles=[
@@ -62,12 +65,21 @@ class ProfilePage:
                             <h4 style="color:black; text-align:left">{st.session_state["name"]}</h4>
                             """
                 
+                email_title = """
+                                <h4 style="color:black; text-align:right">Email: </h4>
+                                """
+                email = f"""
+                            <h4 style="color:black; text-align:left">{st.session_state["email"]}</h4>
+                            """
+                
                 col1, col2 = st.columns([0.12, 0.88], gap="small")
 
                 with col1:
                     st.markdown(username_title, unsafe_allow_html=True)
+                    st.markdown(email_title, unsafe_allow_html=True)
                 with col2:
                     st.markdown(username, unsafe_allow_html=True)
+                    st.markdown(email, unsafe_allow_html=True)
 
         # set the style of the tabs 
         st.markdown("""
