@@ -263,6 +263,8 @@ class AuthenticationHandler:
             Required list of domains a new email must belong to i.e. ['gmail.com', 'yahoo.com'], 
             list: the required list of domains, None: any domain is allowed.
         """
+        if not self.validator.validate_password(password):
+            raise RegisterError('Password is not valid')
         if not self.validator.validate_email(email):
             raise RegisterError('Email is not valid')
         if self._credentials_contains_value(email):
