@@ -4,16 +4,20 @@ from streamlit_extras.stylable_container import stylable_container as container
 import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
+import os
+import shutil
+import time 
 
 ############################## Profile Class ##############################
 class ProfilePage:
     """
     A class that shows the home page of the web page.
     """
+    STREAMLIT_PATH = './streamlit_app'
 
-    def config_page(self):
-        """
-        Configures the page when created. 
+    def __init__(self):
+        """ 
+        Configures the page when created.
         """
         # set the page configuration
         st.set_page_config(
@@ -27,6 +31,9 @@ class ProfilePage:
 
         st.title("My Profile")
 
+        if 'is_delete_button_disabled' not in st.session_state:
+            st.session_state['is_delete_button_disabled'] = True 
+
     def update_config(self):
         """
         Update the user details in the config.yaml file after updates.
@@ -34,6 +41,11 @@ class ProfilePage:
         """
         with open("config.yaml", "w") as file:
             yaml.dump(config, file, default_flow_style=False)
+
+    def disable_delete_button(self):
+        """ Disables the delete button.
+        """
+        st.session_state['is_delete_button_disabled'] = True 
 
     def page_content(self, authenticator):
         """
@@ -106,7 +118,7 @@ class ProfilePage:
 
                     </style>""", unsafe_allow_html=True)
 
-        tab1, tab2 = st.tabs(["Reset Password", "Update Details"])
+        tab1, tab2, tab3 = st.tabs(["Reset Password", "Update Details", "Detection Results"])
 
         with tab1:
              if st.session_state["authentication_status"]:
@@ -125,15 +137,28 @@ class ProfilePage:
                         st.success('Entries updated successfully')
                 except Exception as e:
                     st.error(e)
+
+        with tab3:
+            results_button = st.button("Delete Results", type='primary', disabled=st.session_state.get("is_delete_button_disabled"), on_click=self.disable_delete_button)
+
+            if os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")) != []:
+                st.session_state['is_delete_button_disabled'] = False  
+
+                if results_button:
+                    for dir in os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")):
+                        shutil.rmtree(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs", dir))
+
+                    alert = st.success("Results cleared!")
+                    time.sleep(2)
+                    alert.empty()
              
 
 ############################## Main Function ##############################
 
 if __name__ == "__main__":
     profile = ProfilePage()
-    profile.config_page()
 
-    with open("config.yaml") as file:
+    with open("streamlit_app/config.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
 
     authenticator = stauth.Authenticate(

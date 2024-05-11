@@ -26,8 +26,8 @@ class Authenticate:
     This class will create login, logout, register user, reset password, forgot password, 
     forgot username, and modify user details widgets.
     """
-    PROJECT_PATH = '/home/student/Documents/MDS22/Aneurysm_Detection_dev'
-    STREAMLIT_PATH = '/home/student/Documents/MDS22/Aneurysm_Detection_dev/streamlit_app'
+    PROJECT_PATH = '.'
+    STREAMLIT_PATH = './streamlit_app'
 
     def __init__(self, credentials: dict, cookie_name: str, cookie_key: str,
                  cookie_expiry_days: float=30.0, pre_authorized: Optional[list]=None,
@@ -248,8 +248,8 @@ class Authenticate:
                     unsafe_allow_html=True,
                 )
 
-                for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
-                    shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+                # for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
+                #     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
 
                 st.switch_page("Home.py")
         elif location == 'sidebar':
@@ -270,8 +270,12 @@ class Authenticate:
                     unsafe_allow_html=True,
                 )
 
-                for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
-                    shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+                # for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
+                #     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+                
+                if os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "upload")) != []:
+                    for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "upload")):
+                        shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "upload", dir))
 
                 st.switch_page("Home.py")
         elif location == 'unrendered':
@@ -292,8 +296,8 @@ class Authenticate:
                     unsafe_allow_html=True,
                 )
 
-                for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
-                    shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+                # for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
+                #     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
 
                 st.switch_page("Home.py")
 

@@ -60,7 +60,7 @@ class HomePage:
         Update the user details in the config.yaml file after updates.
         Includes new registration, password update and user detail updates.
         """
-        with open("config.yaml", "w") as file:
+        with open("streamlit_app/config.yaml", "w") as file:
             yaml.dump(config, file, default_flow_style=False)
 
     def toggle_is_signup(self):
@@ -256,7 +256,7 @@ class HomePage:
                     get_started_button = st.button("Get Started")
 
                     if get_started_button:
-                        st.switch_page("pages/1 Aneurysm_Detection.py")
+                        st.switch_page("streamlit_app/pages/1 Aneurysm_Detection.py")
 
         with col2:
             with container(
@@ -268,7 +268,7 @@ class HomePage:
                     }
                     """,
             ):
-                st.image("resources/brain.png")
+                st.image("streamlit_app/resources/brain.png")
                 st.write(
                     "Image source: [Source 1](https://www.hopkinsmedicine.org/health/conditions-and-diseases/cerebral-aneurysm), [Source 2](https://www.barrowneuro.org/condition/brain-aneurysm/), [Source 3](https://www.froedtert.com/brain-aneurysm)"
                 )
@@ -373,7 +373,7 @@ if __name__ == "__main__":
     home = HomePage()
     home.set_page_config()
 
-    with open("config.yaml") as file:
+    with open("streamlit_app/config.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
 
     authenticator = stauth.Authenticate(
