@@ -15,19 +15,22 @@ import subprocess
 from zipfile import ZipFile
 from PIL import Image
 
-PROJECT_PATH = '/home/student/Documents/MDS22/Aneurysm_Detection_dev'
-STREAMLIT_PATH = '/home/student/Documents/MDS22/Aneurysm_Detection_dev/streamlit_app'
+PROJECT_PATH = '.'
+STREAMLIT_PATH = './streamlit_app'
 ############################## Page Configuration ##############################
 
-# set the page configuration
-st.set_page_config(
-    page_title="Aneurysm Detection",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+def setup_page():
+    """ Sets up the UI configuration of the page.
+    """
+    # set the page configuration
+    st.set_page_config(
+        page_title="Aneurysm Detection",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
 
-# change background colour of the app
-st.markdown(uiconf.pages_ui_config(), unsafe_allow_html=True)
+    # change background colour of the app
+    st.markdown(uiconf.pages_ui_config(), unsafe_allow_html=True)
 
 
 ############################## Page Content ##############################
@@ -180,14 +183,11 @@ def main():
                         plt.axis('off')  # Turn off axis
                         st.pyplot()  # Display the plot in Streamlit
 
-
-            for dir in os.listdir(os.path.join(STREAMLIT_PATH, input_folder)):
-                shutil.rmtree(os.path.join(STREAMLIT_PATH, input_folder, dir))
-
-                
-
+            for dir in os.listdir(input_folder):
+                shutil.rmtree(os.path.join(input_folder, dir))
 
 ############################## Main Function ##############################
 
 if __name__ == '__main__':
+    setup_page()
     main()
