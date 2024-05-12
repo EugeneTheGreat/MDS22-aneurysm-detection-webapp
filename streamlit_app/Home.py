@@ -256,7 +256,7 @@ class HomePage:
                     get_started_button = st.button("Get Started")
 
                     if get_started_button:
-                        st.switch_page("streamlit_app/pages/1 Aneurysm_Detection.py")
+                        st.switch_page("pages/1 Aneurysm_Detection.py")
 
         with col2:
             with container(

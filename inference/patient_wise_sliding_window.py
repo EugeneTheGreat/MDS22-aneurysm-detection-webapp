@@ -17,10 +17,8 @@ import SimpleITK as sitk
 import nibabel as nib
 import numpy as np
 import tensorflow as tf
-import tf2onnx
-from onnx2pytorch import ConvertModel
-from medcam import medcam
-import torch
+from exceptions import *
+import re
 import shutil
 from shutil import copyfile
 import time
@@ -549,7 +547,29 @@ def main():
     sanity_check_inputs(unet_patch_side, unet_batch_size, unet_threshold, overlapping, new_spacing, conv_filters, cv_folds, anatomically_informed_sliding_window,
                         test_time_augmentation, reduce_fp, max_fp, reduce_fp_with_volume, min_aneurysm_volume, remove_dark_fp, bids_dir, training_outputs_path,
                         landmarks_physical_space_path, ground_truth_dir, training_sub_ses_dir, demo_dir)
+    
+    # ------------------ application-specific error handling
+    sub_count = 0
+    sub_file_pattern = r'sub-\d{3}'
+    for dir in os.listdir(demo_dir):
+        if re.match(sub_file_pattern, dir):
+            sub_count += 1
 
+    if sub_count == 0:
+        raise NoSubjectsError
+    
+    if sub_count > 1:
+        raise MultipleSubjectsError
+    
+    if 'derivatives' not in os.listdir(demo_dir):
+        raise MissingDerivativesError
+    
+    if not set(['manual_masks', 'N4_bias_field_corrected', 'registrations']).issubset(os.listdir(os.path.join(demo_dir, 'derivatives'))):
+        raise MissingDerivativesError
+    
+    if not set(['reg_metrics', 'reg_params', 'vesselMNI_2_angioTOF']).issubset(os.listdir(os.path.join(demo_dir, 'derivatives', 'registrations'))):
+        raise MissingDerivativesError
+    
     #  ------------------ create input lists for running sliding-window in parallel across subjects
     all_subdirs, all_files = create_input_lists(bids_dir)
     demo_subdirs, demo_files = create_input_lists(demo_dir)

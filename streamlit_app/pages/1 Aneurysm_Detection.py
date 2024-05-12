@@ -14,6 +14,7 @@ import json
 import subprocess
 from zipfile import ZipFile
 from PIL import Image
+from subprocess import CalledProcessError
 
 PROJECT_PATH = '.'
 STREAMLIT_PATH = './streamlit_app'
@@ -36,7 +37,7 @@ def setup_page():
 ############################## Page Content ##############################
 
 # Function to perform prediction
-def predict(file_path):
+def predict(file_path, input_folder):
     with open(os.path.join(PROJECT_PATH, 'inference/config_inference.json'), 'r') as file:
         data = json.load(file)
 
@@ -47,11 +48,29 @@ def predict(file_path):
     # Write the modified JSON back to the file
     with open(os.path.join(PROJECT_PATH, 'inference/config_inference_streamlit.json'), 'w') as file:
         json.dump(data, file, indent=4)
-    process = subprocess.run(["python",
+    try:
+        process = subprocess.run(["python",
                               os.path.join(PROJECT_PATH, "inference/patient_wise_sliding_window.py"),
                               "--config",
                               os.path.join(PROJECT_PATH, "inference/config_inference_streamlit.json")],
-                              check=True, capture_output=True, text=True)
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process.check_returncode()
+    except CalledProcessError as e:
+        error_output = e.stderr.decode('utf-8')
+        # Check for specific error cases and display custom messages
+        if 'MultipleSubjectsError' in error_output:
+            st.error("Mutiple subjects found in uploaded folder; please include only one subject.")
+        elif 'NoSubjectsError' in error_output:
+            st.error("No subjects found in uploaded folder; please include one subject with a proper directory name (eg. sub-123).")
+        elif 'MissingDerivativesError' in error_output:
+            st.error("Derivatives folder is missing or not structured correctly; please check input structure against guideline in Home.")
+        else:
+            st.error(f"An error occurred: {error_output}.\nPlease check input structure against guideline in Home or contact developers.")
+
+        for dir in os.listdir(input_folder):
+            shutil.rmtree(os.path.join(input_folder, dir))
+
+        return
     
     return file_path  
 
@@ -71,6 +90,14 @@ def main():
         with ZipFile(uploaded_file, 'r') as zObject:
             with st.spinner("Processing files..."):
                 zObject.extractall(path=input_folder)
+
+        if len(os.listdir(input_folder)) != 1:   # no folders or more than one folder was extracted
+            st.error("Zip file must contain exactly one folder!")
+            for dir in os.listdir(input_folder):
+                shutil.rmtree(os.path.join(input_folder, dir))
+                
+            return
+        
         if 'last_uploaded_file' in st.session_state and st.session_state.last_uploaded_file != uploaded_file:
             st.session_state.button_clicked = False
             st.session_state.prediction_done = False
@@ -84,7 +111,10 @@ def main():
             st.session_state.button_clicked = True
             if not st.session_state.get('prediction_done', False):
                 with st.spinner("Model running..."):
-                    predict(os.path.join(input_folder, uploaded_file.name.split('.')[0]))
+                    inference = predict(os.path.join(input_folder, os.listdir(input_folder)[0]), input_folder)
+                    # terminate application
+                    if inference is None:
+                        return
                 st.session_state.prediction_done = True
 
             # Display segmented image
