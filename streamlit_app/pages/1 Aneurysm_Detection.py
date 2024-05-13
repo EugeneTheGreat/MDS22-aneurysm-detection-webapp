@@ -1,5 +1,8 @@
 import fnmatch
 import streamlit as st
+import streamlit_authenticator as stauth
+import yaml
+from yaml.loader import SafeLoader
 from streamlit_extras.add_vertical_space import add_vertical_space
 import utils.ui_config as uiconf
 import glob
@@ -239,6 +242,21 @@ def main():
 
 if __name__ == '__main__':
     setup_page()
-    main()
+
+    with open("streamlit_app/config.yaml") as file:
+        config = yaml.load(file, Loader=SafeLoader)
+
+    profile_authenticator = stauth.Authenticate(
+        config["credentials"],
+        config["cookie"]["name"],
+        config["cookie"]["key"],
+        config["cookie"]["expiry_days"],
+        config["pre-authorized"],
+    )
+
+    if st.session_state["authentication_status"]:
+        main()
+    else:
+        st.switch_page("Home.py")
 
     uiconf.page_footer()

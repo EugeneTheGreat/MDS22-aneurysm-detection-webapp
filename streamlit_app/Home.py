@@ -139,7 +139,7 @@ class HomePage:
                     with col2:
                         add_vertical_space(7)
                         # go back to the authentication page 
-                        authenticator.logout("Login or SignUp Now!", "main")
+                        guest_logout = authenticator.logout("Login or SignUp Now!", "main")
 
             else:  # registered user login
                 placeholder.empty()
@@ -149,12 +149,13 @@ class HomePage:
 
                 # app tips
                 add_vertical_space(1)
-                st.subheader("3 Great Tips!")
+                st.subheader("Some Great Tips!")
                 add_vertical_space(1)
                 with st.expander("Show Tips"):
                     self.page_tips_container("1. Remember to log out everytime before closing the app for extra security.")
                     self.page_tips_container("2. Mix uppercase, lowercase, numbers, and symbols in a memorable passphrase for robust password security.")
                     self.page_tips_container("3. Why did the password go to therapy? Because it couldn't find a safe place to save itself! Do save yours safely!")
+                    self.page_tips_container("4. Ensure to clear detection results in My Profile page after each session.")
 
         elif st.session_state["authentication_status"] is False:  # cannot authenticate user
             self.hide_sidebar("collapsed")
