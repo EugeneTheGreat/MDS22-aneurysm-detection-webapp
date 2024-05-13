@@ -1,5 +1,6 @@
 import fnmatch
 import streamlit as st
+from streamlit_extras.add_vertical_space import add_vertical_space
 import utils.ui_config as uiconf
 import glob
 from pathlib import Path
@@ -59,13 +60,13 @@ def predict(file_path, input_folder):
         error_output = e.stderr.decode('utf-8')
         # Check for specific error cases and display custom messages
         if 'MultipleSubjectsError' in error_output:
-            st.error("Mutiple subjects found in uploaded folder; please include only one subject.")
+            st.error("Mutiple subjects found in uploaded file; please include only one subject.")
         elif 'NoSubjectsError' in error_output:
-            st.error("No subjects found in uploaded folder; please include one subject with a proper directory name (eg. sub-123).")
+            st.error("No subjects found in uploaded file; please include one subject with a proper directory name (eg. sub-123).")
         elif 'MissingDerivativesError' in error_output:
-            st.error("Derivatives folder is missing or not structured correctly; please check input structure against guideline in Home.")
+            st.error("Derivatives directory is missing or not structured correctly; please check zip file structure.")
         else:
-            st.error(f"An error occurred: {error_output}.\nPlease check input structure against guideline in Home or contact developers.")
+            st.error(f"An error occurred: {error_output}.\nPlease check zip file structure or contact developers.")
 
         for dir in os.listdir(input_folder):
             shutil.rmtree(os.path.join(input_folder, dir))
@@ -76,9 +77,25 @@ def predict(file_path, input_folder):
 
 def main():
     st.title('Intracranial Aneurysm Detection and Segmentation')
-
+    add_vertical_space(3)
     st.subheader('Upload TOF-MRA Image (.zip)')
-    st.warning('File types accepted is only .zip. Please upload only a single .zip file!', icon="⚠️")
+
+    # warning message
+    st.warning('''
+        **Kindly read this before uploading any file.**  
+        1. File types accepted is only .zip. Please upload only a single .zip file!  
+        2. The root of the .zip file must contain exactly one directory (call it input directory), i.e., one single folder.  
+        3. The input directory must contain two directories: the subject directory whose name starts with “sub-” followed by three digits, and the derivatives directory named “derivatives”.  
+        4. The subject directory should contain the session directory whose name starts with “ses-” followed by six digits (the session date in ‘yyyymmdd’ format), whereas the session directory should contain a directory named “anat”, which itself contains the NIfTI TOF-MRA images and machine parameter JSON files.  
+        5. The derivatives directory contains the subject’s derivative files; it should contain three directories at its root: “manual_masks”, “N4_bias_field_corrected” and “registrations”.  
+        6. The “manual_masks” directory should have the following directory hierarchy: subject-code > session-date > anat > mask files. This is similar to the structure in rules 2 and 3.  
+        7. Similar to rule 6, the “N4_bias_field_corrected” directory should have the following directory hierarchy: subject-code > session-date > anat > N4 bias field corrected files.   
+        8. The “registrations” directory should contain three subdirectories: “reg_metrics”, “reg_params” and “vesselMNI_2_angioTOF”.  
+        9. Each “registrations” subdirectory should have a directory hierarchy similar to that of rules 5 and 6, with the base containing their respective files.  
+               
+        **Please refer to the End User Guide for full details (including examples).**
+    ''', icon="⚠️")
+
     uploaded_file = st.file_uploader("Upload input zip file (.zip)...", type="zip")
 
     os.makedirs(os.path.join(STREAMLIT_PATH, 'upload'), exist_ok=True)
@@ -92,10 +109,10 @@ def main():
                 zObject.extractall(path=input_folder)
 
         if len(os.listdir(input_folder)) != 1:   # no folders or more than one folder was extracted
-            st.error("Zip file must contain exactly one folder!")
+            st.error("Zip file must contain exactly one directory at its root!")
             for dir in os.listdir(input_folder):
                 shutil.rmtree(os.path.join(input_folder, dir))
-                
+
             return
         
         if 'last_uploaded_file' in st.session_state and st.session_state.last_uploaded_file != uploaded_file:
@@ -105,7 +122,8 @@ def main():
 
 
         # Display the uploaded image
-        st.subheader('Uploaded TOF-MRA Image')   
+        add_vertical_space(2)
+        st.subheader('Detect Uploaded TOF-MRA Image')   
 
         if st.button('Detect and Segment Aneurysms') or st.session_state.get('button_clicked', False):
             st.session_state.button_clicked = True
@@ -118,6 +136,7 @@ def main():
                 st.session_state.prediction_done = True
 
             # Display segmented image
+            add_vertical_space(2)
             st.subheader('Segmented Image with Detected Aneurysms')
 
             run_path = os.path.join(output_folder, sorted(os.listdir(output_folder))[-1])
