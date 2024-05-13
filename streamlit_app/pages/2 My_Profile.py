@@ -35,12 +35,12 @@ class ProfilePage:
         if 'is_delete_button_disabled' not in st.session_state:
             st.session_state['is_delete_button_disabled'] = True 
 
-    def update_config(self):
+    def update_config(self, config):
         """
         Update the user details in the config.yaml file after updates.
         Includes new registration, password update and user detail updates.
         """
-        with open("config.yaml", "w") as file:
+        with open("streamlit_app/config.yaml", "w") as file:
             yaml.dump(config, file, default_flow_style=False)
 
     def disable_delete_button(self):
@@ -48,7 +48,7 @@ class ProfilePage:
         """
         st.session_state['is_delete_button_disabled'] = True 
 
-    def page_content(self, authenticator):
+    def page_content(self, authenticator, config):
         """
         The content of the profile page. 
         """
@@ -129,8 +129,10 @@ class ProfilePage:
                 if st.session_state["authentication_status"]:
                     try:
                         if authenticator.reset_password(st.session_state["username"]):
-                            self.update_config()
+                            self.update_config(config)
                             st.success('Password modified successfully')
+                            time.sleep(1)
+                            authenticator._logout_actions()
                     except Exception as e:
                         st.error(e)
 
@@ -138,7 +140,7 @@ class ProfilePage:
                 if st.session_state["authentication_status"]:
                     try:
                         if authenticator.update_user_details(st.session_state["username"]):
-                            self.update_config()
+                            self.update_config(config)
                             st.success('Entries updated successfully')
                     except Exception as e:
                         st.error(e)
@@ -177,6 +179,6 @@ if __name__ == "__main__":
         config["pre-authorized"],
     )
 
-    profile.page_content(profile_authenticator)
+    profile.page_content(profile_authenticator, config)
 
     uiconf.page_footer()
