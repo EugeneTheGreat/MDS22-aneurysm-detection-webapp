@@ -362,6 +362,8 @@ class AuthenticationHandler:
         if self.check_credentials(username, password):
             if not self.validator.validate_length(new_password, 1):
                 raise ResetError('No new password provided')
+            if not self.validator.validate_password(new_password):
+                raise ResetError("Password is invalid")
             if new_password != new_password_repeat:
                 raise ResetError('Passwords do not match')
             if password != new_password:
@@ -436,10 +438,10 @@ class AuthenticationHandler:
         """
         if field == 'name':
             if not self.validator.validate_name(new_value):
-                raise UpdateError('Name is not valid')
+                raise UpdateError('Name is not valid or empty')
         if field == 'email':
             if not self.validator.validate_email(new_value):
-                raise UpdateError('Email is not valid')
+                raise UpdateError('Email is not valid or empty')
             if self._credentials_contains_value(new_value):
                 raise UpdateError('Email already taken')
         if new_value != self.credentials['usernames'][username][field]:

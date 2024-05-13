@@ -11,7 +11,7 @@ class CredentialsError(Exception):
         if credential_type == 'username':
             super().__init__('Username is incorrect')
         elif credential_type == 'password':
-            super().__init__('Password is incorrect')
+            super().__init__('Password is incorrect or fields are empty')
         else:
             super().__init__('Username/password is incorrect')
 

@@ -416,6 +416,8 @@ class Authenticate:
         reset_password_form.subheader('Reset password' if 'Form name' not in fields
                                       else fields['Form name'])
         username = username.lower()
+
+        pw_info_message = "User password must have at least one small capital alphabet, at least one capital alphabet, at least one numerical number, at least one special character '{@$!%*?&'} and the length must be between 8 to 20 characters"
         password = reset_password_form.text_input('Current password'
                                                   if 'Current password' not in fields
                                                   else fields['Current password'],
@@ -423,7 +425,7 @@ class Authenticate:
         new_password = reset_password_form.text_input('New password'
                                                       if 'New password' not in fields
                                                       else fields['New password'],
-                                                      type='password')
+                                                      type='password', help=pw_info_message)
         new_password_repeat = reset_password_form.text_input('Repeat password'
                                                              if 'Repeat password' not in fields
                                                              else fields['Repeat password'],
