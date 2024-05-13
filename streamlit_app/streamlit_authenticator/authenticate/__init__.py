@@ -355,13 +355,14 @@ class Authenticate:
         username_info_message = "User name must have minimum 1 character and maximum 20 characters. It can only consist of characters a-z or A-Z or numerics or - or _"
         pw_info_message = "User password must have at least one small capital alphabet, at least one capital alphabet, at least one numerical number, at least one special character '{@$!%*?&'} and the length must be between 8 to 20 characters"
         repeat_pw_info_message = "Please type out the same password. Do NOT copy and paste!"
+        email_info_message = "Please enter the correct email format, i.e., must have a pattern of <username>@<email_domain>. E.g., aneu123@gmail.com"
 
         register_user_form.subheader('Register User' if 'Form name' not in fields
                                      else fields['Form name'])
         new_name = register_user_form.text_input('Name' if 'Name' not in fields
                                                  else fields['Name'], help=name_info_message)
         new_email = register_user_form.text_input('Email' if 'Email' not in fields
-                                                  else fields['Email'])
+                                                  else fields['Email'], help=email_info_message)
         new_username = register_user_form.text_input('Username' if 'Username' not in fields
                                                      else fields['Username'], help=username_info_message).lower()
         new_password = register_user_form.text_input('Password' if 'Password' not in fields

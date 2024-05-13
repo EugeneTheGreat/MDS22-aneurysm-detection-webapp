@@ -1,5 +1,6 @@
 import streamlit as st
 import utils.ui_config as uiconf
+from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.stylable_container import stylable_container as container
 import streamlit_authenticator as stauth
 import yaml
@@ -117,6 +118,9 @@ class ProfilePage:
                         }
 
                     </style>""", unsafe_allow_html=True)
+        
+        st.subheader("Settings")
+        add_vertical_space(1)
 
         tab1, tab2, tab3 = st.tabs(["Reset Password", "Update Details", "Detection Results"])
 
@@ -170,3 +174,5 @@ if __name__ == "__main__":
     )
 
     profile.page_content(authenticator)
+
+    uiconf.page_footer()

@@ -240,3 +240,5 @@ def main():
 if __name__ == '__main__':
     setup_page()
     main()
+
+    uiconf.page_footer()
