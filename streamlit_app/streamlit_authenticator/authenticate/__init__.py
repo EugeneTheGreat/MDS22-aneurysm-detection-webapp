@@ -215,6 +215,35 @@ class Authenticate:
                         self.cookie_handler.set_cookie()
         return (st.session_state['name'], st.session_state['authentication_status'],
                 st.session_state['username'], st.session_state['email'])
+    def _logout_actions(self):
+        """
+        A series of actions to perform during logout. 
+        """
+        self.authentication_handler.execute_logout()
+        self.cookie_handler.delete_cookie()
+
+        # hide the sidebar
+        st.session_state.sidebar_state = "collapsed"
+        st.markdown(
+            """
+            <style>
+                [data-testid="collapsedControl"] {
+                    display: none
+                }
+               </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
+        #     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
+                
+        # clear the upload folder
+        if os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "upload")) != []:
+            for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "upload")):
+                shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "upload", dir))
+
+        st.switch_page("Home.py")
     def logout(self, button_name: str='Logout', location: str='main', key: Optional[str]=None):
         """
         Creates a logout button.
@@ -232,74 +261,13 @@ class Authenticate:
             raise ValueError("Location must be one of 'main' or 'sidebar' or 'unrendered'")
         if location == 'main':
             if st.button(button_name, key):
-                self.authentication_handler.execute_logout()
-                self.cookie_handler.delete_cookie()
-
-                # hide the sidebar
-                st.session_state.sidebar_state = "collapsed"
-                st.markdown(
-                    """
-                    <style>
-                        [data-testid="collapsedControl"] {
-                            display: none
-                        }
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                # for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
-                #     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
-
-                st.switch_page("Home.py")
+                self._logout_actions()
         elif location == 'sidebar':
             if st.sidebar.button(button_name, key):
-                self.authentication_handler.execute_logout()
-                self.cookie_handler.delete_cookie()
-
-                # hide the sidebar
-                st.session_state.sidebar_state = "collapsed"
-                st.markdown(
-                    """
-                    <style>
-                        [data-testid="collapsedControl"] {
-                            display: none
-                        }
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                # for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
-                #     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
-                
-                if os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "upload")) != []:
-                    for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "upload")):
-                        shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "upload", dir))
-
-                st.switch_page("Home.py")
+                self._logout_actions()
         elif location == 'unrendered':
             if st.session_state['authentication_status']:
-                self.authentication_handler.execute_logout()
-                self.cookie_handler.delete_cookie()
-
-                # hide the sidebar
-                st.session_state.sidebar_state = "collapsed"
-                st.markdown(
-                    """
-                    <style>
-                        [data-testid="collapsedControl"] {
-                            display: none
-                        }
-                    </style>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                # for dir in os.listdir(os.path.join(Authenticate.STREAMLIT_PATH, "outputs")):
-                #     shutil.rmtree(os.path.join(Authenticate.STREAMLIT_PATH, "outputs", dir))
-
-                st.switch_page("Home.py")
+                self._logout_actions()
 
 
     def register_user(self, location: str='main', pre_authorization: bool=True,
