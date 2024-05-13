@@ -171,7 +171,9 @@ class AuthenticationHandler:
         st.session_state['logout'] = True
         st.session_state['name'] = None
         st.session_state['username'] = None
+        st.session_state['email'] = None 
         st.session_state['authentication_status'] = None
+        print("Logout Executed")
     def forgot_password(self, username: str) -> tuple:
         """
         Creates a new random password for the user.

@@ -52,109 +52,113 @@ class ProfilePage:
         """
         The content of the profile page. 
         """
-        # the logout button
-        authenticator.logout("Logout", "sidebar", "main_logout")
+        if st.session_state["authentication_status"]:
+            # the logout button
+            main_logout = authenticator.logout("Logout", "sidebar", "main_logout")
 
-        with container(
-                key="profile_container",
-                css_styles=[
-                    """
-                    {
-                        border-radius: 25px;
-                        padding-top: 20px;
-                        padding-bottom: 30px;
-                        padding-left: 40px;
-                        background-color: #C2D7EA;
-                        margin-top: 10px;
-                        margin-bottom: 50px
-                    }
-                    """,
-                ],
-            ):
-                username_title = """
-                                <h4 style="color:black; text-align:right">Username: </h4>
-                                """
-                username = f"""
-                            <h4 style="color:black; text-align:left">{st.session_state["name"]}</h4>
-                            """
-                
-                email_title = """
-                                <h4 style="color:black; text-align:right">Email: </h4>
-                                """
-                email = f"""
-                            <h4 style="color:black; text-align:left">{st.session_state["email"]}</h4>
-                            """
-                
-                col1, col2 = st.columns([0.12, 0.88], gap="small")
-
-                with col1:
-                    st.markdown(username_title, unsafe_allow_html=True)
-                    st.markdown(email_title, unsafe_allow_html=True)
-                with col2:
-                    st.markdown(username, unsafe_allow_html=True)
-                    st.markdown(email, unsafe_allow_html=True)
-
-        # set the style of the tabs 
-        st.markdown("""
-                    <style>
-                        .stTabs [data-baseweb="tab-list"] {
-                            gap: 12px;
-                        }
-
-                        .stTabs [data-baseweb="tab"] {
-                            height: 40px;
-                            white-space: pre-wrap;
-                            border-radius: 10px 10px 10px 10px;
-                            gap: 5px;
-                            padding-top: 10px;
-                            padding-bottom: 10px;
-                            padding-left: 10px;
-                            padding-right: 10px;
-                            margin-bottom: 10px;
-                        }
-
-                        .stTabs [aria-selected="true"] {
+            with container(
+                    key="profile_container",
+                    css_styles=[
+                        """
+                        {
+                            border-radius: 25px;
+                            padding-top: 20px;
+                            padding-bottom: 30px;
+                            padding-left: 40px;
                             background-color: #C2D7EA;
+                            margin-top: 10px;
+                            margin-bottom: 50px
                         }
+                        """,
+                    ],
+                ):
+                    username_title = """
+                                    <h4 style="color:black; text-align:right">Username: </h4>
+                                    """
+                    username = f"""
+                                <h4 style="color:black; text-align:left">{st.session_state["name"]}</h4>
+                                """
+                    
+                    email_title = """
+                                    <h4 style="color:black; text-align:right">Email: </h4>
+                                    """
+                    email = f"""
+                                <h4 style="color:black; text-align:left">{st.session_state["email"]}</h4>
+                                """
+                    
+                    col1, col2 = st.columns([0.12, 0.88], gap="small")
 
-                    </style>""", unsafe_allow_html=True)
-        
-        st.subheader("Settings")
-        add_vertical_space(1)
+                    with col1:
+                        st.markdown(username_title, unsafe_allow_html=True)
+                        st.markdown(email_title, unsafe_allow_html=True)
+                    with col2:
+                        st.markdown(username, unsafe_allow_html=True)
+                        st.markdown(email, unsafe_allow_html=True)
 
-        tab1, tab2, tab3 = st.tabs(["Reset Password", "Update Details", "Detection Results"])
+            # set the style of the tabs 
+            st.markdown("""
+                        <style>
+                            .stTabs [data-baseweb="tab-list"] {
+                                gap: 12px;
+                            }
 
-        with tab1:
-             if st.session_state["authentication_status"]:
-                try:
-                    if authenticator.reset_password(st.session_state["username"]):
-                        self.update_config()
-                        st.success('Password modified successfully')
-                except Exception as e:
-                    st.error(e)
+                            .stTabs [data-baseweb="tab"] {
+                                height: 40px;
+                                white-space: pre-wrap;
+                                border-radius: 10px 10px 10px 10px;
+                                gap: 5px;
+                                padding-top: 10px;
+                                padding-bottom: 10px;
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                margin-bottom: 10px;
+                            }
 
-        with tab2:
-            if st.session_state["authentication_status"]:
-                try:
-                    if authenticator.update_user_details(st.session_state["username"]):
-                        self.update_config()
-                        st.success('Entries updated successfully')
-                except Exception as e:
-                    st.error(e)
+                            .stTabs [aria-selected="true"] {
+                                background-color: #C2D7EA;
+                            }
 
-        with tab3:
-            results_button = st.button("Delete Results", type='primary', disabled=st.session_state.get("is_delete_button_disabled"), on_click=self.disable_delete_button)
+                        </style>""", unsafe_allow_html=True)
+            
+            st.subheader("Settings")
+            add_vertical_space(1)
 
-            if os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")) != []:
-                st.session_state['is_delete_button_disabled'] = False  
+            tab1, tab2, tab3 = st.tabs(["Reset Password", "Update Details", "Detection Results"])
 
-                if results_button:
-                    for dir in os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")):
-                        shutil.rmtree(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs", dir))
+            with tab1:
+                if st.session_state["authentication_status"]:
+                    try:
+                        if authenticator.reset_password(st.session_state["username"]):
+                            self.update_config()
+                            st.success('Password modified successfully')
+                    except Exception as e:
+                        st.error(e)
 
-                    alert = st.success("Results cleared!")
-                    time.sleep(2)
-                    alert.empty()
+            with tab2:
+                if st.session_state["authentication_status"]:
+                    try:
+                        if authenticator.update_user_details(st.session_state["username"]):
+                            self.update_config()
+                            st.success('Entries updated successfully')
+                    except Exception as e:
+                        st.error(e)
+
+            with tab3:
+                results_button = st.button("Delete Results", type='primary', disabled=st.session_state.get("is_delete_button_disabled"), on_click=self.disable_delete_button)
+
+                if os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")) != []:
+                    st.session_state['is_delete_button_disabled'] = False  
+
+                    if results_button:
+                        for dir in os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")):
+                            shutil.rmtree(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs", dir))
+
+                        alert = st.success("Results cleared!")
+                        time.sleep(2)
+                        alert.empty()
+
+        else:
+            st.switch_page("Home.py")
              
 
 ############################## Main Function ##############################
@@ -165,7 +169,7 @@ if __name__ == "__main__":
     with open("streamlit_app/config.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
 
-    authenticator = stauth.Authenticate(
+    profile_authenticator = stauth.Authenticate(
         config["credentials"],
         config["cookie"]["name"],
         config["cookie"]["key"],
@@ -173,6 +177,6 @@ if __name__ == "__main__":
         config["pre-authorized"],
     )
 
-    profile.page_content(authenticator)
+    profile.page_content(profile_authenticator)
 
     uiconf.page_footer()

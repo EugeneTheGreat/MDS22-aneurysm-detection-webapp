@@ -62,6 +62,7 @@ class CookieHandler:
         """
         try:
             self.cookie_manager.delete(self.cookie_name)
+            print("Cookie Deleted!")
         except KeyError as e:
             print(e)
     def set_cookie(self):

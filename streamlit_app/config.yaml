@@ -1,5 +1,5 @@
 cookie:
-  expiry_days: 30
+  expiry_days: 0
   key: brain_aneurysm
   name: brain_aneurysm_cookie
 credentials:
