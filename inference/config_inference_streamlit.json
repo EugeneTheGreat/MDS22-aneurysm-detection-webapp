@@ -29,7 +29,7 @@
     "all_test_sub_ses_inhouse": "./fixed_pickles/all_test_subs_inhouse.pkl",
     "training_outputs_path": "./fixed_pickles/Train_Outputs_Aug_16_2021_chuv_weak_plus_voxelwise_pretrain_adam_github/",
     "training_sub_ses": "/media/student/HDD 1/MDS22/training_sub_ses",
-    "demo_dir": "./streamlit_app/upload/demo2",
+    "demo_dir": "./streamlit_app/upload/demo_zip",
     "only_pretrain_on_adam": "False",
     "bids_dir_adam": "/path/to/ADAM/dataset/BIDS_format/available_upon_request/",
     "training_outputs_path_adam": "./extra_files/Train_Outputs_whole_adam_ds",

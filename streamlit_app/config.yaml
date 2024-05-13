@@ -30,6 +30,7 @@ credentials:
       password: $2b$12$Tz3L0hYp6fBlsWHxZrtjWuQs3ncZ05dBcfnv6RQiWLX.D7.9hKGai
     admin5:
       email: admin5@gmail.com
+      failed_login_attempts: 0
       logged_in: false
       name: Admin Five
       password: $2b$12$/sqv8e9YOj9s/GX9UTf1v.Yeuulj3AYrL8nJ159q/r9bE/QdU9.i.
@@ -45,6 +46,11 @@ credentials:
       logged_in: false
       name: Kokonen
       password: $2b$12$53TkNKhvvF5k5CqEQ6GPN.YVilN3BqCa5Bk2Q.zQdTgzOza0uhXCS
+    steve:
+      email: appleceo123@gmail.com
+      logged_in: false
+      name: Steve Jobs
+      password: $2b$12$lyTku726K5E1t19c28q4AOPoTqsRkUN2g7riV1uqwF1biw5rmUlGO
     taylor:
       email: ts000@gmail.com
       failed_login_attempts: 0

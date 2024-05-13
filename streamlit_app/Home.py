@@ -1,6 +1,7 @@
 import streamlit as st
 import streamlit_authenticator as stauth
 from streamlit_extras.stylable_container import stylable_container as container
+from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.card import card
 from streamlit_extras.let_it_rain import rain
 import utils.ui_config as uiconf
@@ -14,15 +15,14 @@ class HomePage:
     """
     A class that shows the home page of the web page.
     """
-
-    def set_page_config(self):
+    def __init__(self):
         """
         Sets the page configuration.
         """
         st.set_page_config(
             page_title="Home",
             layout="wide",
-            initial_sidebar_state=st.session_state.get("sidebar_state", "expanded"),
+            initial_sidebar_state=st.session_state.get("sidebar_state", "expanded")
         )
 
         # change background colour of the app
@@ -97,20 +97,64 @@ class HomePage:
                 st.title(f'Welcome *{self.get_user_name()}*!')
                 self.page_content(have_detect_button=False)
 
-                col1, col2 = st.columns([0.55, 0.45], gap="small")
-                with col1:
-                    guest_message = """
-                                    <p style="text-align:right">Interested? Login or sign up now!</p>
+                with container(
+                    key="guest_container",
+                    css_styles=[
+                        """
+                        {
+                            border-radius: 25px;
+                            padding-top: 30px;
+                            padding-bottom: 30px;
+                            padding-left: 120px;
+                            background-color: #C2D7EA;
+                            margin-top: 80px;
+                            margin-bottom: 40px
+                        }
+                        """,
+                        """
+                        button {
+                            height: 55px;
+                            border-radius: 15px;
+                        }
+                        """,
+                    ],
+                ):
+                    col1, col2 = st.columns([0.50, 0.50], gap="small")
+
+                    with col1:
+                        subheader_txt = """
+                                        <h1 style="color:black">Interested?</h1>
+                                        """
+                        body_txt = """
+                                <h4 style="color:black">Login or sign up now</h4>
+                                """
+                        body_txt2 = """
+                                    <p style="color:black">And start detecting!</p>
                                     """
-                    st.markdown(guest_message, unsafe_allow_html=True)
-                with col2:
-                    # go back to the authentication page 
-                    authenticator.logout("Login/SignUp", "main")
+                        add_vertical_space(4)
+                        st.markdown(subheader_txt, unsafe_allow_html=True)
+                        st.markdown(body_txt, unsafe_allow_html=True)
+                        st.markdown(body_txt2, unsafe_allow_html=True)
+                        add_vertical_space(5)
+                    with col2:
+                        add_vertical_space(7)
+                        # go back to the authentication page 
+                        authenticator.logout("Login or SignUp Now!", "main")
+
             else:  # registered user login
                 placeholder.empty()
                 st.session_state.sidebar_state = "expanded"
                 st.title(f'Welcome back *{self.get_user_name()}*!')
                 self.page_content()
+
+                # app tips
+                add_vertical_space(1)
+                st.subheader("3 Great Tips!")
+                add_vertical_space(1)
+                with st.expander("Show Tips"):
+                    self.page_tips_container("1. Remember to log out everytime before closing the app for extra security.")
+                    self.page_tips_container("2. Mix uppercase, lowercase, numbers, and symbols in a memorable passphrase for robust password security.")
+                    self.page_tips_container("3. Why did the password go to therapy? Because it couldn't find a safe place to save itself! Do save yours safely!")
 
         elif st.session_state["authentication_status"] is False:  # cannot authenticate user
             self.hide_sidebar("collapsed")
@@ -256,7 +300,7 @@ class HomePage:
                     get_started_button = st.button("Get Started")
 
                     if get_started_button:
-                        st.switch_page("streamlit_app/pages/1 Aneurysm_Detection.py")
+                        st.switch_page("pages/1 Aneurysm_Detection.py")
 
         with col2:
             with container(
@@ -274,6 +318,8 @@ class HomePage:
                 )
 
         # the links to papers for aneurysm
+        add_vertical_space(4)
+        st.subheader("See Also")
         col3, col4, col5 = st.columns(3, gap="small")
 
         with col3:
@@ -366,12 +412,35 @@ class HomePage:
                 },
             )
 
+    def page_tips_container(self, tips):
+        """
+        Container to show tips for the app.
+        """
+        with container(
+                    key="tips_container",
+                    css_styles=[
+                        """
+                        {
+                            border-radius: 15px;
+                            padding-top: 20px;
+                            padding-bottom: 20px;
+                            padding-left: 50px;
+                            background-color: #C2D7EA;
+                            margin-top: 15px;
+                            margin-bottom: 15px
+                        }
+                        """
+                    ],
+                ):
+            txt = f"""
+                        <h5 style="color:black">{tips}</h5>
+                        """
+            st.markdown(txt, unsafe_allow_html=True)
 
 ############################## Main Function ##############################
 
 if __name__ == "__main__":
     home = HomePage()
-    home.set_page_config()
 
     with open("streamlit_app/config.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
@@ -385,3 +454,5 @@ if __name__ == "__main__":
     )
 
     home.page_authentication(authenticator)
+
+    uiconf.page_footer()
