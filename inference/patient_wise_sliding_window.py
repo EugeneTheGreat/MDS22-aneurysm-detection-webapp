@@ -557,7 +557,7 @@ def main():
 
     if sub_count == 0:
         raise NoSubjectsError
-    
+
     if sub_count > 1:
         raise MultipleSubjectsError
     
