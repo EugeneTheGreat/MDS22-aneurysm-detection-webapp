@@ -47,11 +47,17 @@ credentials:
       name: Kokonen
       password: $2b$12$53TkNKhvvF5k5CqEQ6GPN.YVilN3BqCa5Bk2Q.zQdTgzOza0uhXCS
     steve:
-      email: appleceo123@applemail.com
+      email: appleinc123@ceo.apple.com
       failed_login_attempts: 0
       logged_in: false
-      name: Steve Jobs
+      name: Apple CEO Steve Jobs
       password: $2b$12$ZFBr.x6/I1dlUzA948uTAe6D4.QClJpkuKwdepfYwSdM4wLY17Sw.
+    student:
+      email: student001@gmail.com
+      failed_login_attempts: 0
+      logged_in: false
+      name: Student
+      password: $2b$12$K1fQ5.Yf4c9NpFqOn9sHouGv17c79PkchfrKpA4nA/2m/8GHVWUsW
     taylor:
       email: ts000@gmail.com
       failed_login_attempts: 0

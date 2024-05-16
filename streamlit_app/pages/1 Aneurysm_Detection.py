@@ -131,7 +131,7 @@ def main():
         if st.button('Detect and Segment Aneurysms') or st.session_state.get('button_clicked', False):
             st.session_state.button_clicked = True
             if not st.session_state.get('prediction_done', False):
-                with st.spinner("Model running..."):
+                with st.spinner("Model running (this may take a while...)"):
                     inference = predict(os.path.join(input_folder, os.listdir(input_folder)[0]), input_folder)
                     # terminate application
                     if inference is None:
@@ -162,12 +162,18 @@ def main():
                                         elif file.startswith('explanation'):
                                             explanation_to_display.append(os.path.join(run_path, sub, ses, 'explanation', file))
 
+            # no aneurysms found
+            if len(original_to_display) == 0:
+                st.success("No aneurysms detected!")
+                for dir in os.listdir(input_folder):
+                    shutil.rmtree(os.path.join(input_folder, dir))
 
+                return
 
             # Define a list of options for the dropdown
-            options = [str(i) for i in range(len(original_to_display) // 3)]
+            options = [str(i+1) for i in range(len(original_to_display) // 3)]
             # Create the dropdown and store the selected value
-            selected_option = st.selectbox('Result No.:', options)
+            selected_option = str(int(st.selectbox('Result No.:', options))-1)
                             
             # set the style of the tabs 
             st.markdown("""
@@ -199,12 +205,14 @@ def main():
             with tab1:
                 st.header("Original")
 
-                
+                st.info("These are slices of the original image where aneurysms were detected.", icon="ℹ️")
+
                 for file_path in original_to_display:
                     file = file_path.split('/')
                     if selected_option == file[-1].split('_')[1]:
                         st.subheader(f'Slice Number: {file[-1].split("_")[5].split(".")[0]}')
                         st.set_option('deprecation.showPyplotGlobalUse', False)
+                        plt.figure(figsize=(10,10))
                         plt.imshow(Image.open(file_path))
                         plt.axis('off')  # Turn off axis
                         st.pyplot()  # Display the plot in Streamlit
@@ -212,12 +220,15 @@ def main():
 
             with tab2:
                 st.header("Segmentation")
+
+                st.info("Detected aneurysms are highlighted in purple.", icon="ℹ️")
                 
                 for i in range(len(segmentation_to_display)):
                     file = segmentation_to_display[i].split('/')
                     if file[-1].split('_')[1] == selected_option:
                         st.subheader('Slice Number: ' + file[-1].split('_')[5].split(".")[0])
                         st.set_option('deprecation.showPyplotGlobalUse', False)
+                        plt.figure(figsize=(10,10))
                         plt.imshow(Image.open(segmentation_to_display[i]))
                         plt.axis('off')  # Turn off axis
                         st.pyplot()  # Display the plot in Streamlit
@@ -225,12 +236,15 @@ def main():
                 
             with tab3:
                 st.header("Explanation")
+
+                st.info("These are slices with Grad-CAM heatmaps to explain AI decisions.", icon="ℹ️")
                 
                 for i in range(len(explanation_to_display)):
                     file = explanation_to_display[i].split('/')
                     if file[-1].split('_')[1] == selected_option:
                         st.subheader('Slice Number: ' + file[-1].split('_')[5].split(".")[0])
                         st.set_option('deprecation.showPyplotGlobalUse', False)
+                        plt.figure(figsize=(10,10))
                         plt.imshow(Image.open(explanation_to_display[i]))
                         plt.axis('off')  # Turn off axis
                         st.pyplot()  # Display the plot in Streamlit

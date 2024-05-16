@@ -146,7 +146,9 @@ class ProfilePage:
                         st.error(e)
 
             with tab3:
-                results_button = st.button("Delete Results", type='primary', disabled=st.session_state.get("is_delete_button_disabled"), on_click=self.disable_delete_button)
+                st.info(f"You can delete your past results here.\nPast results are currently stored in {os.getcwd()}/streamlit_app/outputs", icon="ℹ️")
+                
+                results_button = st.button("Delete Past Results", type='primary', disabled=st.session_state.get("is_delete_button_disabled"), on_click=self.disable_delete_button)
 
                 if os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")) != []:
                     st.session_state['is_delete_button_disabled'] = False  
@@ -155,7 +157,7 @@ class ProfilePage:
                         for dir in os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")):
                             shutil.rmtree(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs", dir))
 
-                        alert = st.success("Results cleared!")
+                        alert = st.success("Past results deleted!")
                         time.sleep(2)
                         alert.empty()
 
