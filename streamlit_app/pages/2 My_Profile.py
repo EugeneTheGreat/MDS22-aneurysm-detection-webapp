@@ -147,7 +147,7 @@ class ProfilePage:
 
             with tab3:
                 st.info(f"You can delete your past results here.\nPast results are currently stored in {os.getcwd()}/streamlit_app/outputs", icon="ℹ️")
-                
+    
                 results_button = st.button("Delete Past Results", type='primary', disabled=st.session_state.get("is_delete_button_disabled"), on_click=self.disable_delete_button)
 
                 if os.listdir(os.path.join(ProfilePage.STREAMLIT_PATH, "outputs")) != []:

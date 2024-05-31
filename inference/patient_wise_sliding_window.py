@@ -207,17 +207,17 @@ def inference_one_subject(subdir,
                             if extracting_conditions_are_met(angio_patch_after_bet_scale_1, vessel_mni_patch, vessel_mni_volume_resampled, nii_volume_after_bet_resampled,
                                                              patch_center_coordinates_physical_space, unet_patch_side, df_landmarks_tof_space, registration_accurate_enough,
                                                              intensity_thresholds, distances_thresholds, anatomically_informed_sliding_window):
-                                # print(f"Extracting from {sub_ses}")
+
                                 # if all conditions are met, we found a good candidate patch
                                 patch_center_coords.append(patch_center_coordinates_resampled)  # append patch center to external list
                                 nb_samples += 1  # increment counter variable to keep track of how many samples are evaluated for this subject
                                 assert angio_patch_after_bet_scale_1.shape == (unet_patch_side, unet_patch_side, unet_patch_side), "Unexpected patch shape; expected ({},{},{})".format(unet_patch_side, unet_patch_side, unet_patch_side)
-                                # print(angio_patch_after_bet_scale_1.shape)
+
                                 try:
                                     angio_patch_after_bet_scale_1 = tf.image.per_image_standardization(angio_patch_after_bet_scale_1)  # standardize patch to have mean 0 and variance 1
                                 except:
                                     print(f"Error standardising {sub_ses}")
-                                # print('Standardised')
+
                                 all_angio_patches_np_list.append(angio_patch_after_bet_scale_1)  # append standardized patch to external list
 
                                 # fill mask volume with ones; this is just used to visualize which are the patches that were retained in the sliding-window
@@ -271,10 +271,13 @@ def inference_one_subject(subdir,
             if os.path.exists(tmp_path) and os.path.isdir(tmp_path):
                 shutil.rmtree(tmp_path)
             # ---------------------------------------------- SAVE SEGMENTATION VISUALISATIONS ------------------------------------------------
+            # load original image
             image = nib.load(os.path.join(bids_dir_path, sub, ses, "anat", f"{sub}_{ses}_angio.nii.gz")).get_fdata()
             this_out_path = os.path.join(out_dir, sub, ses)
+            # load output aneurysm mask
             mask = nib.load(os.path.join(this_out_path, 'result.nii.gz')).get_fdata()
 
+            # get aneurysm coordinates
             with open(os.path.join(this_out_path, 'result.txt'), 'r') as f:
                 lines = f.readlines()
                 results = [line[:-1].split(',') for line in lines]
@@ -282,6 +285,7 @@ def inference_one_subject(subdir,
             os.makedirs(os.path.join(this_out_path, 'original'), exist_ok=True)
             os.makedirs(os.path.join(this_out_path, 'segmentation'), exist_ok=True)
 
+            # save original and segmentation visualisations
             for i, result in enumerate(results):
                 for axis in range(3):
                     slice = int(result[axis])
@@ -290,53 +294,49 @@ def inference_one_subject(subdir,
                     save_visualisation(image, mask, axis, int(result[axis]), image_save_path, segm_save_path)
 
             # ---------------------------------------------- XAI ------------------------------------------------
+            # get model's last convolutional layer
             unet_gradcam = tf.keras.models.Model([unet.inputs], [unet.get_layer(unet.layers[-1].name).output, unet.output])
-            # print(unet.summary())
-            # print(unet_gradcam.summary())
             
+            # generate heatmaps for each candidate patch
             heatmaps = []
             for i, patch in enumerate(all_angio_patches_np_list):
                 if i in pos_patches_idxs:
-                    print(f'Patch shape: {patch.shape}')
                     heatmap = guided_gradcam_3d(unet_gradcam, patch, 1)
                     heatmaps.append(heatmap)
-                    # s_itk_image = sitk.GetImageFromArray(heatmap)
-                    # sitk.WriteImage(s_itk_image, os.path.join(this_out_path, f'xai{i}.nii.gz'))
 
+            # initialise same-shape empty volumes
             overlay = np.zeros(image.shape)
-            counter = np.zeros(image.shape)
+            counter = np.zeros(image.shape)   # to handle overlapping voxels
             pos_patch_coords = [coords for i, coords in enumerate(patch_center_coords) if i in pos_patches_idxs]
-            print(image.shape)
-            print(len(pos_patch_coords))
-            print(pos_patch_coords)
 
+            # add each heatmap to volume
             for coords, heatmap in zip(pos_patch_coords, heatmaps):
-                # Extract the coordinates
+                # extract coordinates of patch centres
                 for i, coord in enumerate(coords):
                     if coord > image.shape[i]:
                         coords[i] = image.shape[i]
 
                 x, y, z = coords
                 
+                # compute bounding box of patch heatmaps
                 start_x, end_x = max(0, x - unet_patch_side // 2), min(overlay.shape[0], x + unet_patch_side // 2)
                 start_y, end_y = max(0, y - unet_patch_side // 2), min(overlay.shape[1], y + unet_patch_side // 2)
                 start_z, end_z = max(0, z - unet_patch_side // 2), min(overlay.shape[2], z + unet_patch_side // 2)
 
+                # sometimes bounding box goes outside of volume; truncate those parts
                 if not all(dim == unet_patch_side for dim in overlay[start_x:end_x, start_y:end_y, start_z:end_z].shape):
                     heatmap = heatmap[:end_x - start_x, :end_y - start_y, :end_z - start_z]
-                    # print(image.shape)
-                    # print(start_z)
-                    # print(end_z)
-                    # print(overlay[start_x:end_x, start_y:end_y, start_z:end_z].shape)
-                    # print(heatmap.shape)
 
+                # add heatmap to overlay volume
                 overlay[start_x:end_x, start_y:end_y, start_z:end_z] += heatmap
                 counter[start_x:end_x, start_y:end_y, start_z:end_z] += 1
 
+            # average out overlapping voxels
             overlay /= np.maximum(counter, 1)
 
             os.makedirs(os.path.join(this_out_path, 'explanation'), exist_ok=True)
 
+            # save Grad-CAM visualisations
             for i, result in enumerate(results):
                 for axis in range(3):
                     slice = int(result[axis])
@@ -367,6 +367,7 @@ def inference_one_subject(subdir,
 def save_visualisation(img, mask, axis, slice_index, img_save_path, segm_save_path, figsize=(10, 10)):
     plt.ioff()
     
+    # get image slice and rotate 90 degrees
     if axis == 0:
         img_rot = Image.fromarray(img[slice_index, :, :]).transpose(Image.ROTATE_90) 
         mask_rot = Image.fromarray(mask[slice_index, :, :]).transpose(Image.ROTATE_90) 
@@ -379,9 +380,9 @@ def save_visualisation(img, mask, axis, slice_index, img_save_path, segm_save_pa
     else:
         raise ValueError('Not a valid axis.')
 
-    # Plot the image
     fig, axes = plt.subplots(1, 1, figsize=figsize)
 
+    # save the original image
     axes.imshow(img_rot, cmap='gray')
     axes.axis('off')
 
@@ -391,12 +392,13 @@ def save_visualisation(img, mask, axis, slice_index, img_save_path, segm_save_pa
 
     plt.ioff()
 
-    # Overlay the aneurysm mask on the image
-    cmap_colors = [(0, 0, 0, 0), (0.5, 0, 0.5)]  # Transparent for background, purple for mask
+    # define custom colourmap
+    cmap_colors = [(0, 0, 0, 0), (0.5, 0, 0.5)]  # transparent for background, purple for mask
     custom_cmap = ListedColormap(cmap_colors)
     
     fig, axes = plt.subplots(1, 1, figsize=figsize)
 
+    # overlay the aneurysm mask on the original image and save it
     axes.imshow(img_rot, cmap='gray')
     axes.imshow(np.ma.masked_where(mask_rot == 0, mask_rot), cmap=custom_cmap, alpha=0.9)
     axes.axis('off')
@@ -405,74 +407,39 @@ def save_visualisation(img, mask, axis, slice_index, img_save_path, segm_save_pa
     plt.savefig(segm_save_path)
     plt.close()
 
-################ XAI functions #####################
-def kaggle_gradcam_3d(grad_model, img, pred_index=1):
-    img_exp = tf.expand_dims(img, axis=-1)
-    img_exp = tf.expand_dims(img_exp, axis=0)
-
-    # Then, we compute the gradient of the top predicted class for our input image
-    # with respect to the activations of the last conv layer
-    with tf.GradientTape() as tape:
-        last_conv_layer_output, preds = grad_model(img_exp)
-        if pred_index is None:
-            pred_index = tf.argmax(preds[0])
-        class_channel = preds[:, pred_index]
-
-    # This is the gradient of the output neuron (top predicted or chosen)
-    # with regard to the output feature map of the last conv layer
-    grads = tape.gradient(class_channel, last_conv_layer_output)
-
-    # This is a vector where each entry is the mean intensity of the gradient
-    # over a specific feature map channel (equivalent to global average pooling)
-    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2, 3))
-
-    # We multiply each channel in the feature map array
-    # by 'how important this channel is' with regard to the top predicted class
-    # then sum all the channels to obtain the heatmap class activation
-    last_conv_layer_output = last_conv_layer_output[0]
-    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
-
-    # For visualization purpose, we will also normalize the heatmap between 0 & 1
-    # Notice that we clip the heatmap values, which is equivalent to applying ReLU
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-    print(f'Heatmap shape: {heatmap.shape}')
-    return heatmap.numpy()
-
 def guided_gradcam_3d(grad_model, ct_io, class_index):
-    # Create a graph that outputs target convolution and output
+    # create a graph that outputs target convolution and output
     input_ct_io = tf.expand_dims(ct_io, axis=-1)
     input_ct_io = tf.expand_dims(input_ct_io, axis=0)
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(input_ct_io)
         loss = predictions[:, class_index]
         
-    # Extract filters and gradients
+    # extract filters and gradients
     output = conv_outputs[0]
     grads = tape.gradient(loss, conv_outputs)[0]
 
-    ##--Guided Gradient Part
-    gate_f = tf.cast(output > 0, 'float32')
-    gate_r = tf.cast(grads > 0, 'float32')
+    ## guided gradient part
     guided_grads = tf.cast(output > 0, 'float32') * tf.cast(grads > 0, 'float32') * grads
 
-    # Average gradients spatially
+    # average gradients spatially
     weights = tf.reduce_mean(guided_grads, axis=(0, 1,2))
-    # Build a ponderated map of filters according to gradients importance
+
+    # build a ponderated map of filters according to gradients importance
     cam = np.ones(output.shape[0:3], dtype=np.float32)
     for index, w in enumerate(weights):
         cam += w * output[:, :, :, index]
 
     capi = resize(cam,(ct_io.shape))
-    # print(capi.shape)
     capi = np.maximum(capi,0)
     heatmap = (capi - capi.min()) / (capi.max() - capi.min())
-    print(f'Heatmap shape: {heatmap.shape}')
+
     return heatmap
 
 def save_explanation(img, overlay, axis, slice_index, save_path, figsize=(10, 10)):
     plt.ioff()
     
+    # get image slice and rotate 90 degrees
     if axis == 0:
         img_rot = Image.fromarray(img[slice_index, :, :]).transpose(Image.ROTATE_90) 
         overlay_rot = Image.fromarray(overlay[slice_index, :, :]).transpose(Image.ROTATE_90) 
@@ -487,6 +454,7 @@ def save_explanation(img, overlay, axis, slice_index, save_path, figsize=(10, 10
     
     fig, axes = plt.subplots(1, 1, figsize=figsize)
     
+    # overlay Grad-CAM heatmap on original image and save it
     axes.imshow(img_rot, cmap='gray')
     axes.imshow(np.ma.masked_where(overlay_rot == 0, overlay_rot), cmap='jet', alpha=0.6)
     axes.axis('off')
