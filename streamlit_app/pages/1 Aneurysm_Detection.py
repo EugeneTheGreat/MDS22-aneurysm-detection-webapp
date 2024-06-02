@@ -42,6 +42,17 @@ def setup_page():
 
 # Function to perform prediction
 def predict(file_path, input_folder):
+    """
+    Performs prediction on the uploaded file.
+
+    Args:
+        file_path (str): The path to the uploaded file.
+        input_folder (str): The folder containing the input files.
+
+    Returns:
+        str: The file path if prediction is successful, None otherwise.
+    """
+     # Load the inference configuration
     with open(os.path.join(PROJECT_PATH, 'inference/config_inference.json'), 'r') as file:
         data = json.load(file)
 
@@ -53,6 +64,7 @@ def predict(file_path, input_folder):
     with open(os.path.join(PROJECT_PATH, 'inference/config_inference_streamlit.json'), 'w') as file:
         json.dump(data, file, indent=4)
     try:
+        # Run the inference script using the modified configuration
         process = subprocess.run(["python",
                               os.path.join(PROJECT_PATH, "inference/patient_wise_sliding_window.py"),
                               "--config",
@@ -61,6 +73,7 @@ def predict(file_path, input_folder):
         process.check_returncode()
     except CalledProcessError as e:
         error_output = e.stderr.decode('utf-8')
+
         # Check for specific error cases and display custom messages
         if 'MultipleSubjectsError' in error_output:
             st.error("Mutiple subjects found in uploaded file; please include only one subject.")
@@ -71,6 +84,7 @@ def predict(file_path, input_folder):
         else:
             st.error(f"An error occurred: {error_output}.\nPlease check zip file structure or contact developers.")
 
+        # Clean up the input folder
         for dir in os.listdir(input_folder):
             shutil.rmtree(os.path.join(input_folder, dir))
 
@@ -79,6 +93,9 @@ def predict(file_path, input_folder):
     return file_path  
 
 def main():
+    """ Main function to run the Streamlit app.
+    """
+    # setup the page title and subheader with formatting
     st.title('Intracranial Aneurysm Detection and Segmentation')
     add_vertical_space(3)
     st.subheader('Upload TOF-MRA Image (.zip)')
@@ -99,14 +116,16 @@ def main():
         **Please refer to the End User Guide for full details (including examples).**
     ''', icon="⚠️")
 
-    uploaded_file = st.file_uploader("Upload input zip file (.zip)...", type="zip")
+    uploaded_file = st.file_uploader("Upload input zip file (.zip)...", type="zip") # file uploader
 
+    # Create directories for uploading and output files if they don't exist
     os.makedirs(os.path.join(STREAMLIT_PATH, 'upload'), exist_ok=True)
     input_folder = os.path.join(STREAMLIT_PATH, 'upload')
     os.makedirs(os.path.join(STREAMLIT_PATH, 'outputs'), exist_ok=True)
     output_folder = os.path.join(STREAMLIT_PATH, 'outputs')
 
     if uploaded_file is not None:
+        # Extract the uploaded zip file
         with ZipFile(uploaded_file, 'r') as zObject:
             with st.spinner("Processing files..."):
                 zObject.extractall(path=input_folder)
@@ -118,6 +137,7 @@ def main():
 
             return
         
+        # Check for repeated uploads and reset states if necessary
         if 'last_uploaded_file' in st.session_state and st.session_state.last_uploaded_file != uploaded_file:
             st.session_state.button_clicked = False
             st.session_state.prediction_done = False
@@ -125,9 +145,12 @@ def main():
 
 
         # Display the uploaded image
+
+        # formatting and add subheader for this section
         add_vertical_space(2)
         st.subheader('Detect Uploaded TOF-MRA Image')   
 
+        # Handle detection button click
         if st.button('Detect and Segment Aneurysms') or st.session_state.get('button_clicked', False):
             st.session_state.button_clicked = True
             if not st.session_state.get('prediction_done', False):
@@ -144,10 +167,12 @@ def main():
 
             run_path = os.path.join(output_folder, sorted(os.listdir(output_folder))[-1])
 
+            # the results array 
             original_to_display = []
             segmentation_to_display = []
             explanation_to_display = []
 
+            # Collect images to display
             for sub in os.listdir(run_path):
                 if sub.startswith('sub'):
                     for ses in os.listdir(os.path.join(run_path, sub)):
@@ -200,7 +225,7 @@ def main():
 
                         </style>""", unsafe_allow_html=True)
 
-            tab1, tab2, tab3 = st.tabs(["Original", "Segmentation", "Explanation"])
+            tab1, tab2, tab3 = st.tabs(["Original", "Segmentation", "Explanation"]) # the tabs for the results
 
             with tab1:
                 st.header("Original")
@@ -249,6 +274,7 @@ def main():
                         plt.axis('off')  # Turn off axis
                         st.pyplot()  # Display the plot in Streamlit
 
+            # Clean up the input folder
             for dir in os.listdir(input_folder):
                 shutil.rmtree(os.path.join(input_folder, dir))
 
